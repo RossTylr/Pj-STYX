@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "styx"
+version = "0.0.0"
+description = "STYX — virtual-ward physiological-trajectory monitor"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "lifelines",
+    "streamlit",
+    "plotly",
+    "jupytext",
+    "pytest",
+    "ruff",
+]
+
+[tool.setuptools]
+packages = [
+    "styx",
+    "styx.synth",
+    "styx.state",
+    "styx.forecast",
+    "styx.risk",
+    "styx.rationale",
+    "styx.theograph",
+    "styx.cohort",
+    "styx.reach",
+    "styx.viz",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
