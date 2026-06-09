@@ -14,14 +14,42 @@ SEED: int = 42
 #: A2 serving window in sim-minutes; OWNED by gate G3 (must preserve the AEGIS→threshold lead).
 RESCORE_CADENCE_MIN: int = 15
 
+#: G3 headline floor — the at-cadence AEGIS→threshold lead must clear this. A regression guard set
+#: just below the measured 210 sim-min lead (seed=42), NOT an adequacy claim; report the raw number.
+AEGIS_LEAD_FLOOR_MIN: int = 180
+
 #: G1 target — RR–SpO₂ decoupling must precede any single-signal breach by ≥ this (sim-minutes).
 DECOUPLING_LEAD_MIN: int = 90
 
 #: G1 band — history→outcome AUC must be learnable yet not perfect (too-learnable also fails).
 OUTCOME_AUC_BAND: tuple[float, float] = (0.60, 0.90)
 
+#: F2 forecast — trailing samples fit for the trend, and samples projected ahead (5 sim-min each).
+FORECAST_WINDOW: int = 12  # 60 sim-min of trailing risk to fit the short-horizon trend
+FORECAST_HORIZON: int = 24  # project 120 sim-min ahead — long enough to anticipate the crossing
+
+#: UQ-1 — conformal miscoverage; band half-width at each horizon = the (1−α) residual quantile.
+CONFORMAL_ALPHA: float = 0.1
+
+#: F2 — the cone's upper edge must reach the threshold for this many consecutive re-scores before
+#: the forecast "fires", so an early transient wobble in the risk trend cannot trip a false alarm.
+FORECAST_SUSTAIN: int = 3
+
+#: F7 AEGIS — personal baseline learned from this many leading (pre-decoupling) samples, then a
+#: sustained ≥ K·σ departure of the 2-D state position over ≥ SUSTAIN samples is the silent flag.
+AEGIS_BASELINE_SAMPLES: int = 24  # first 120 sim-min — stable, well before decoupling (sample 108)
+AEGIS_SMOOTH_SAMPLES: int = 12  # trailing mean (60 sim-min) — strips fast homeostatic swing from the trend
+AEGIS_K: float = 3.0  # departure threshold in baseline σ units
+AEGIS_SUSTAIN: int = 3  # consecutive samples (15 sim-min) above K before AEGIS fires
+
 #: SIG-1 — the tight vital set that carries the decoupling (RR, SpO₂, HR, temp + one labs proxy).
 VITALS: tuple[str, ...] = ("RR", "SpO2", "HR", "temp", "labs_proxy")
+
+#: F1 state-space axes — the named physiological constructs each 2-D latent axis must track.
+STATE_AXES: tuple[str, str] = ("oxygenation", "effort")
+
+#: G2 target — each latent axis must correlate with its construct at |r| ≥ this, else fall back.
+LEGIBILITY_THRESHOLD: float = 0.60
 
 #: Theograph care-event channels (Layer-1/3). Fixed order — iterate this, never dict order.
 CHANNELS: tuple[str, ...] = (

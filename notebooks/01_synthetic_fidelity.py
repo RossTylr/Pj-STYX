@@ -16,16 +16,19 @@
 #
 # Proof for the **root gate**: the synthetic COPD cohort contains the phenomena the MVP claims
 # to detect. This notebook *imports* `styx.synth` (LYR-1 — never reimplements) and renders the
-# three G1 panels: the dissociable **silent window**, the genuine **RR–SpO₂ decoupling** with its
-# lead over the breach, and the **outcome-vs-history** correlation. Replay-of-synthetic only.
+# G1 panels: the dissociable **silent window** (now silent hypoxia — SpO₂ falls, effort flat), the
+# genuine **RR–SpO₂ decoupling** with its lead over the breach, the **outcome-vs-history**
+# correlation, and the deterioration **archetypes** that dissociate oxygenation from effort.
+# Replay-of-synthetic only.
 
 # %%
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from styx.config import DECOUPLING_LEAD_MIN, NORMAL_RANGES, VITALS
+from styx.config import DECOUPLING_LEAD_MIN, NORMAL_RANGES
 from styx.synth import (
+    Archetype,
     build_cohort,
     cohort_outcome_auc,
     decoupling_lead_min,
@@ -45,9 +48,10 @@ print(f"lead ≥ G1 target ({DECOUPLING_LEAD_MIN} min): {lead >= DECOUPLING_LEAD
 print(f"cohort outcome AUC from history: {cohort_outcome_auc(cohort):.3f}")
 
 # %% [markdown]
-# ## Panel 1 — the dissociable silent window
-# Every vital stays inside its normal band (shaded) while RR rises and SpO₂ falls: a trend
-# detector fires here where an absolute-threshold check stays silent.
+# ## Panel 1 — the dissociable silent window (silent hypoxia)
+# Every vital stays inside its normal band (shaded) while SpO₂ falls and RR stays **flat** — the
+# effort response that would raise the alarm never comes. A trend detector fires here where an
+# absolute-threshold check (and a clinician watching RR) stays silent.
 
 # %%
 fig1 = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=("RR", "SpO2"))
@@ -99,3 +103,24 @@ fig3.update_layout(title=f"Observed comorbidity proxy vs outcome (AUC={cohort_ou
                    height=420, yaxis_title="comorbidity index (observed events)")
 fig3.write_html("outputs/01_outcome_vs_history.html")
 fig3
+
+# %% [markdown]
+# ## Panel 4 — deterioration archetypes dissociate oxygenation from effort
+# One example stay per deteriorating archetype. **Silent-hypoxia**: SpO₂ falls, RR flat. **Compensated**:
+# RR climbs, SpO₂ holds. **Coupled**: both move. This off-diagonal spread is what makes the F1 state
+# space genuinely 2-D (so the silent case is not just "less deteriorated" — it deteriorates differently).
+
+# %%
+examples = {a: next(pt for pt in cohort.patients if pt.archetype is a)
+            for a in (Archetype.SILENT_HYPOXIA, Archetype.COMPENSATED, Archetype.COUPLED)}
+fig4 = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=("SpO2", "RR"))
+for a, pt in examples.items():
+    for row, v in enumerate(("SpO2", "RR"), start=1):
+        fig4.add_trace(go.Scatter(x=pt.t_min, y=pt.vitals[v], name=a.value,
+                                  legendgroup=a.value, showlegend=(row == 1)), row=row, col=1)
+for row, v in enumerate(("SpO2", "RR"), start=1):
+    r = NORMAL_RANGES[v]
+    fig4.add_hrect(y0=r.low, y1=r.high, fillcolor="#2a8", opacity=0.08, line_width=0, row=row, col=1)
+fig4.update_layout(title="Deterioration archetypes — oxygenation vs effort dissociate", height=520)
+fig4.write_html("outputs/01_archetypes.html")
+fig4

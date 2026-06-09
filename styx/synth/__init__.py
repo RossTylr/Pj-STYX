@@ -11,8 +11,10 @@ from styx.synth.gates import (
     replay_windows,
     windowed_coherence,
 )
+from styx.synth.scenario import Archetype
 
 __all__ = [
+    "Archetype",
     "Cohort",
     "Outcome",
     "Patient",

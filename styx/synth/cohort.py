@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from styx.config import CHANNELS, RESCORE_CADENCE_MIN, SEED, VITALS
-from styx.synth.scenario import generate_episode, time_grid
+from styx.synth.scenario import Archetype, generate_episode, time_grid
 
 #: Per-channel baseline event rate + frailty loading (events ~ Poisson(base + load·frailty)).
 _CHANNEL_BASE: float = 1.0
@@ -28,6 +28,13 @@ _OUTCOME_MIDPOINT: float = 0.5
 
 #: Measurement noise (event units) on the observed comorbidity proxy — what a real model sees.
 _COMORBIDITY_NOISE: float = 3.0
+
+#: Deterioration shapes an escalator can take (drawn uniformly) — they span the oxy×effort plane.
+_ESCALATOR_ARCHETYPES: tuple[Archetype, ...] = (
+    Archetype.SILENT_HYPOXIA,
+    Archetype.COMPENSATED,
+    Archetype.COUPLED,
+)
 
 
 def _sigmoid(z: float) -> float:
@@ -51,6 +58,7 @@ class Patient:
     comorbidity_index: float  # observed event-density proxy + measurement noise (not frailty)
     vitals: dict[str, np.ndarray]  # keyed by VITALS, each length N_SAMPLES
     outcome: Outcome
+    archetype: Archetype  # the deterioration shape (STABLE for recovered)
     t_min: np.ndarray  # shared sim-minute time grid
 
 
@@ -72,6 +80,8 @@ class Cohort:
             return False
         for a, b in zip(self.patients, other.patients):
             if a.pid != b.pid or a.frailty != b.frailty or a.outcome is not b.outcome:
+                return False
+            if a.archetype is not b.archetype:
                 return False
             if a.comorbidity_index != b.comorbidity_index:
                 return False
@@ -98,16 +108,21 @@ def build_cohort(seed: int = SEED, n_patients: int = 50) -> Cohort:
     patients: list[Patient] = []
     for pid, child in enumerate(children):
         if pid == 0:
-            # Scripted high-frailty escalator — no frailty/outcome draw (keeps patient 0 stable).
-            frailty, deteriorate = 0.85, True
+            # Scripted silent-hypoxia index case — no frailty/outcome draw (keeps patient 0 stable).
+            frailty, archetype = 0.85, Archetype.SILENT_HYPOXIA
         else:
             frailty = float(child.uniform(0.1, 0.9))
             p_adverse = _sigmoid(_OUTCOME_K * (frailty - _OUTCOME_MIDPOINT))
-            deteriorate = bool(child.uniform() < p_adverse)  # outcome SAMPLED, not thresholded
-        outcome = Outcome.ESCALATED if deteriorate else Outcome.RECOVERED
+            if child.uniform() < p_adverse:  # outcome SAMPLED, not thresholded
+                archetype = _ESCALATOR_ARCHETYPES[int(child.integers(len(_ESCALATOR_ARCHETYPES)))]
+            else:
+                archetype = Archetype.STABLE
+        outcome = Outcome.RECOVERED if archetype is Archetype.STABLE else Outcome.ESCALATED
         theograph = _theograph(child, frailty)
-        vitals = generate_episode(child, deteriorate=deteriorate)
+        vitals = generate_episode(child, archetype=archetype)
         # Trailing draw (after the episode) so adding it cannot shift patient 0's vital stream.
         comorbidity = float(sum(theograph.values()) + child.normal(0.0, _COMORBIDITY_NOISE))
-        patients.append(Patient(pid, frailty, theograph, comorbidity, vitals, outcome, grid))
+        patients.append(
+            Patient(pid, frailty, theograph, comorbidity, vitals, outcome, archetype, grid)
+        )
     return Cohort(tuple(patients), dt_min=int(grid[1] - grid[0]))

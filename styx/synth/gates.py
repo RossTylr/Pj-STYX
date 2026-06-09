@@ -102,9 +102,11 @@ _MIN_SILENT_SAMPLES: int = 6  # ≥30 sim-min — a window long enough to read a
 def has_silent_window(p: Patient) -> bool:
     """True if a window exists where every vital is in range yet the trend is adverse.
 
-    The window runs from the decoupling onset to the first instantaneous range excursion, so
-    the in-range guarantee is strict; the adverse trend (RR rising, SpO2 falling) is what a
-    trend detector would catch here while an absolute-threshold check stays silent.
+    The window runs from the decoupling onset to the first instantaneous range excursion, so the
+    in-range guarantee is strict. The adverse trend is *oxygenation falling* (SpO2 slope < 0) while
+    homeostatic coupling is already lost — a multivariate signal a trend detector catches where an
+    absolute-threshold check stays silent. Note: RR is *not* required to rise — true silent hypoxia
+    drops SpO2 with effort flat, so hinging on RR would miss the very phenomenon AEGIS (F7) targets.
     """
     onset = decoupling_onset_index(p)
     end = _first_excursion_index(p)
@@ -118,9 +120,8 @@ def has_silent_window(p: Patient) -> bool:
 
     in_range = all(_in(v) for v in VITALS)
     x = p.t_min[seg] - p.t_min[seg].mean()  # centre for a well-conditioned fit
-    rr_slope = float(np.polyfit(x, p.vitals["RR"][seg], 1)[0])
     spo2_slope = float(np.polyfit(x, p.vitals["SpO2"][seg], 1)[0])
-    return in_range and rr_slope > 0 and spo2_slope < 0
+    return in_range and spo2_slope < 0
 
 
 def cohort_outcome_auc(cohort: Cohort) -> float:
