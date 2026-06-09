@@ -18,4 +18,5 @@ st.warning(
 
 st.write(f"Vital set (SIG-1): {', '.join(VITALS)}")
 st.write(f"Re-score cadence: every {RESCORE_CADENCE_MIN} min (sim-time)")
-st.info("Scaffold only (Slice S0). Patient view and ward board land in S4–S5.")
+st.info("Open **Patient** in the sidebar for the integrated single-patient view (S4). "
+        "The **Ward** board lands in S5.")

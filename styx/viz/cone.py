@@ -18,9 +18,20 @@ def cone_figure(
     threshold: float,
     *,
     now_idx: int,
+    ghost: ForecastCone | None = None,
 ) -> go.Figure:
-    """Render the observed risk up to ``now`` and the forecast cone (band + point) beyond it."""
+    """Render the observed risk up to ``now`` and the forecast cone (band + point) beyond it.
+
+    ``ghost`` (optional, default None → existing callers unaffected) overlays an earlier, *stale*
+    projection — the cone anchored at the AEGIS fire-time — as a faint dashed path on the realised
+    risk (F9: "what STYX saw coming when it first flagged").
+    """
     fig = go.Figure()
+    if ghost is not None:
+        fig.add_trace(go.Scatter(
+            x=ghost.t_fore, y=ghost.point, mode="lines", name="ghost (forecast at AEGIS)",
+            line=dict(color="#e80", width=2, dash="dot"), opacity=0.7,
+        ))
     fig.add_trace(go.Scatter(
         x=t_min[: now_idx + 1], y=series[: now_idx + 1], mode="lines", name="risk (observed)",
         line=dict(color="#36c", width=2),

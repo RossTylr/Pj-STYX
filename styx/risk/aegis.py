@@ -32,15 +32,25 @@ def _trailing_mean(x: np.ndarray, w: int) -> np.ndarray:
     return out
 
 
-def aegis_signal(patient: Patient, emb: Embedding) -> np.ndarray:
-    """Per-sample baseline departure of the *trend-smoothed* state position, in σ units (max axis)."""
+def aegis_axis_departures(patient: Patient, emb: Embedding) -> dict[str, np.ndarray]:
+    """Per named-axis baseline departure (σ units) of the trend-smoothed position.
+
+    The element-wise max over these axes is exactly ``aegis_signal`` — so the dominant axis names
+    the *departure direction* CALLIOPE reports (F8), faithful to the same computation AEGIS fires on.
+    """
     path = trajectory_path(patient, emb)
     smooth = np.column_stack([_trailing_mean(path[:, k], AEGIS_SMOOTH_SAMPLES) for k in range(2)])
     base = smooth[:AEGIS_BASELINE_SAMPLES]
     mu = base.mean(axis=0)
     sd = base.std(axis=0)
     sd[sd == 0.0] = 1e-9
-    return np.abs((smooth - mu) / sd).max(axis=1)
+    dep = np.abs((smooth - mu) / sd)
+    return {emb.axis_labels[k]: dep[:, k] for k in range(2)}
+
+
+def aegis_signal(patient: Patient, emb: Embedding) -> np.ndarray:
+    """Per-sample baseline departure of the *trend-smoothed* state position, in σ units (max axis)."""
+    return np.column_stack(list(aegis_axis_departures(patient, emb).values())).max(axis=1)
 
 
 def _first_sustained(mask: np.ndarray, sustain: int) -> int | None:

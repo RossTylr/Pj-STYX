@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 
 from styx.state.embedding import Basins, Embedding, now_position, trajectory_path
 from styx.synth.cohort import Patient
+from styx.theograph.events import CareEvent
 
 
 def _basin_shape(center, radius, color: str) -> dict:
@@ -21,8 +22,18 @@ def _basin_shape(center, radius, color: str) -> dict:
     )
 
 
-def trajectory_figure(patient: Patient, emb: Embedding, basins: Basins) -> go.Figure:
-    """Render a stay as a path between the stability basin and the crisis attractor."""
+def trajectory_figure(
+    patient: Patient,
+    emb: Embedding,
+    basins: Basins,
+    *,
+    events: list[tuple[int, CareEvent]] | None = None,
+) -> go.Figure:
+    """Render a stay as a path between the stability basin and the crisis attractor.
+
+    ``events`` (optional, default None → existing callers unaffected) threads in-episode care
+    events onto the path at the sample index where each occurred (F3 Layer-1 overlay).
+    """
     path = trajectory_path(patient, emb)
     now = now_position(patient, emb)
     fig = go.Figure()
@@ -34,6 +45,13 @@ def trajectory_figure(patient: Patient, emb: Embedding, basins: Basins) -> go.Fi
         line=dict(color="#888", width=1),
         marker=dict(size=4, color=patient.t_min, colorscale="Viridis", showscale=False),
     ))
+    if events:
+        fig.add_trace(go.Scatter(
+            x=[float(path[i, 0]) for i, _ in events], y=[float(path[i, 1]) for i, _ in events],
+            mode="markers", name="care event", text=[e.channel for _, e in events],
+            hovertemplate="%{text}<extra></extra>",
+            marker=dict(size=12, symbol="diamond", color="#e80", line=dict(color="white", width=1)),
+        ))
     fig.add_trace(go.Scatter(
         x=[now[0]], y=[now[1]], mode="markers", name="now",
         marker=dict(size=18, color="#36c", line=dict(color="white", width=2)),

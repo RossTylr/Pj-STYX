@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from styx.config import RESCORE_CADENCE_MIN, THRESHOLDS
-from styx.forecast import conformal_band, forecast_fire_index
+from styx.forecast import ForecastCone, conformal_band, forecast_fire_index, project
 from styx.risk import aegis_fire_index, escalation_fire_index, risk_series
 from styx.state import fit_embedding, learn_basins
 from styx.synth.cohort import Cohort, Patient
@@ -71,3 +71,23 @@ def fire_times(
         return None if i is None else float(t[i])
 
     return FireTimes(tmin(ai), tmin(fi), tmin(ei), cadence_min)
+
+
+def ghost_cone(
+    cohort: Cohort, patient: Patient, *, cadence_min: int = RESCORE_CADENCE_MIN
+) -> ForecastCone | None:
+    """F9 — the *stale* forecast: the cone we'd have drawn at the AEGIS fire-time, re-run now.
+
+    Anchors ``project`` at the AEGIS fire index and projects forward with the same conformal band,
+    so the page can overlay that earlier projection on the realised path — the ghost of what STYX
+    saw coming when it first flagged. None if AEGIS never fired. Pure re-run; no new model (LYR-1).
+    """
+    emb = fit_embedding(cohort)
+    basins = learn_basins(cohort, emb)
+    t = patient.t_min
+    ai = aegis_fire_index(patient, emb, cadence_indices(patient, cadence_min))
+    if ai is None:
+        return None
+    calibration = [risk_series(q, emb, basins) for q in cohort.patients if q.pid != patient.pid]
+    band = conformal_band(calibration, t)
+    return project(risk_series(patient, emb, basins), t, ai, band)

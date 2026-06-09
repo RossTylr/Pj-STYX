@@ -42,6 +42,10 @@ AEGIS_SMOOTH_SAMPLES: int = 12  # trailing mean (60 sim-min) — strips fast hom
 AEGIS_K: float = 3.0  # departure threshold in baseline σ units
 AEGIS_SUSTAIN: int = 3  # consecutive samples (15 sim-min) above K before AEGIS fires
 
+#: G4 — CALLIOPE faithfulness floor: top-1 named risk driver must match the model's actual top
+#: contributor (independent risk ablation) on at least this fraction of the held-out re-scores.
+G4_FAITHFULNESS_FLOOR: float = 0.90
+
 #: SIG-1 — the tight vital set that carries the decoupling (RR, SpO₂, HR, temp + one labs proxy).
 VITALS: tuple[str, ...] = ("RR", "SpO2", "HR", "temp", "labs_proxy")
 
