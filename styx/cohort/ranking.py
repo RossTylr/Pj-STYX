@@ -103,10 +103,12 @@ def _first_crossing_min(edge: np.ndarray, t_fore: np.ndarray, threshold: float) 
     return float(t_fore[hits[0]]) if hits.size else None
 
 
-def _eta_band(
+def eta_band(
     cone: ForecastCone, now_min: float, risk_now: float, threshold: float
 ) -> tuple[str, float | None, float | None, bool]:
     """The banded time-to-escalation (UQ-1: a range off the cone, never a hard minute).
+
+    Single source for the banded ETA: the ward board *and* the episode timeline read it.
 
     The upper edge crosses at or before the point forecast (``upper ≥ point``), so the band runs
     (soonest, central). Already-over and never-crossing are handled explicitly — no NaN ever sorts.
@@ -136,7 +138,7 @@ def ward_frame(cctx: CohortContext, now_idx: int) -> list[WardRow]:
     for p in cctx.cohort.patients:
         risk_now = float(cctx.risk[p.pid][now_idx])
         cone = project(cctx.risk[p.pid], cctx.t_min, now_idx, cctx.band)
-        status, eta_soon, eta_cen, confident = _eta_band(cone, now_min, risk_now, cctx.threshold)
+        status, eta_soon, eta_cen, confident = eta_band(cone, now_min, risk_now, cctx.threshold)
         a = cctx.aegis_idx[p.pid]
         silent = a is not None and a <= now_idx and risk_now < cctx.threshold
         # `new_low_history`: deteriorating without the frailty history that would have predicted it.

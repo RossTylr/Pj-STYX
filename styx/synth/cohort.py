@@ -98,7 +98,7 @@ def _theograph(rng: np.random.Generator, frailty: float) -> dict[str, int]:
 
 
 def build_cohort(seed: int = SEED, n_patients: int = 50) -> Cohort:
-    """Build a deterministic COPD cohort (≥12 floor; 50 default for a stable AUC estimate).
+    """Build a deterministic acute-respiratory-infection cohort (≥12 floor; 50 default for AUC).
 
     Patient 0 is the scripted silent case (forced escalating); its draw order is preserved so its
     decoupling lead and silent window are bit-identical to the validated baseline.

@@ -9,6 +9,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from styx.forecast import ForecastCone
+from styx.viz import palette as pal
 
 
 def cone_figure(
@@ -29,25 +30,25 @@ def cone_figure(
     fig = go.Figure()
     if ghost is not None:
         fig.add_trace(go.Scatter(
-            x=ghost.t_fore, y=ghost.point, mode="lines", name="ghost (forecast at AEGIS)",
-            line=dict(color="#e80", width=2, dash="dot"), opacity=0.7,
+            x=ghost.t_fore, y=ghost.point, mode="lines", name="Hindsight forecast (at early warning)",
+            line=dict(color=pal.EARLY_WARNING, width=2, dash="dot"), opacity=0.7,
         ))
     fig.add_trace(go.Scatter(
         x=t_min[: now_idx + 1], y=series[: now_idx + 1], mode="lines", name="risk (observed)",
-        line=dict(color="#36c", width=2),
+        line=dict(color=pal.RISK, width=2),
     ))
     # Conformal band as a filled envelope (upper out, lower back) — widens with the horizon.
     band_x = np.concatenate([cone.t_fore, cone.t_fore[::-1]])
     band_y = np.concatenate([cone.upper, cone.lower[::-1]])
     fig.add_trace(go.Scatter(
-        x=band_x, y=band_y, fill="toself", fillcolor="rgba(51,102,204,0.18)",
+        x=band_x, y=band_y, fill="toself", fillcolor=pal.CONE_FILL,
         line=dict(width=0), name="conformal cone", hoverinfo="skip",
     ))
     fig.add_trace(go.Scatter(
         x=cone.t_fore, y=cone.point, mode="lines", name="forecast",
-        line=dict(color="#36c", width=1, dash="dash"),
+        line=dict(color=pal.RISK, width=1, dash="dash"),
     ))
-    fig.add_hline(y=threshold, line=dict(color="#c33", width=1, dash="dot"),
+    fig.add_hline(y=threshold, line=dict(color=pal.THRESHOLD, width=1, dash="dot"),
                   annotation_text="escalation threshold")
     fig.update_layout(
         title="Forecast cone — risk projected past now",

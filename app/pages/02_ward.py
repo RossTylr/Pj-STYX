@@ -10,8 +10,10 @@ import streamlit as st
 
 from styx.cohort import build_cohort_context, ward_frame
 from styx.cohort.echo import echo_neighbours
-from styx.explain import EXPLAINERS
+from styx.explain import ARCHETYPE_PATTERNS, ETA_BANDS, EXPLAINERS, OBS_AGE_TEMPLATE
+from styx.readouts import eta_ordinal, footer_text, sim_clock, styx_index
 from styx.synth import build_cohort
+from styx.viz import palette as pal
 from styx.viz.echo import echo_figure
 
 st.set_page_config(page_title="STYX — ward", layout="wide")
@@ -66,25 +68,40 @@ def _header(title: str, cid: str) -> None:
 
 
 def _eta_label(r) -> str:
-    """The banded time-to-escalation as text — a range, never a hard minute (UQ-1)."""
+    """The ordinal time-to-escalation band (6i) — never a hard minute (UQ-1). A low-confidence
+    ETA (only the cone's upper edge crosses) is shown open-ended with a leading ``≥``, not a
+    parenthetical."""
     if r.status == "escalated":
-        return "over the line"
+        return "threshold crossed"
     if r.status == "no-forecast":
         return "—"
-    if r.eta_confident and r.eta_central_min is not None:
-        return f"~{r.eta_soonest_min:.0f}–{r.eta_central_min:.0f} min"
-    return f"~{r.eta_soonest_min:.0f}+ min (low confidence)"
+    band = ETA_BANDS[eta_ordinal(r.eta_soonest_min)]
+    return band if r.eta_confident else f"≥ {band}"
 
 
-def _flags(r) -> str:
-    tags = []
-    if r.silent_but_rising:
-        tags.append("🔵 silent-but-rising")
-    if r.quietest:
-        tags.append("🟢 quietest")
-    if r.new_low_history:
-        tags.append("🟠 new low-history")
-    return " · ".join(tags)
+# Watch-flags: one source for the (WardRow attr → wording) mapping, rendered two ways below.
+_FLAGS: tuple[tuple[str, str], ...] = (
+    ("silent_but_rising", "silent-but-rising"),
+    ("quietest", "quietest"),
+    ("new_low_history", "new low-history"),
+)
+
+
+def _active_flags(r) -> list[tuple[str, str]]:
+    return [(key, label) for key, label in _FLAGS if getattr(r, key)]
+
+
+def _flag_badges(r) -> str:
+    """Text pill badges (6l): the flag *words* carry the meaning, the badge colour (from the shared
+    palette) is a redundant cue only — no emoji, no state by hue alone."""
+    return " ".join(
+        f":{pal.WARD_FLAG_BADGE[key]}-background[{label}]" for key, label in _active_flags(r)
+    )
+
+
+def _flag_text(r) -> str:
+    """Plain-text flags for the dataframe (which renders cells as text, not markdown)."""
+    return " · ".join(label for _, label in _active_flags(r))
 
 
 def _drill(r) -> None:
@@ -98,7 +115,8 @@ def _drill(r) -> None:
 
 
 st.title("Ward board")
-st.caption(f"Cohort re-scored at **{int(cctx.t_min[now_idx])} min** · {len(rows)} patients")
+st.caption(f"Cohort {OBS_AGE_TEMPLATE.format(clock=sim_clock(cctx.t_min[now_idx]))} · "
+           f"{len(rows)} patients")
 
 # --- watchlist: the silent-but-rising patients a threshold board would show green --------------
 watch = [r for r in rows if r.silent_but_rising]
@@ -108,8 +126,8 @@ if not watch:
 for r in watch[: (TOP_N if focus_mode else len(watch))]:
     c1, c2, c3, c4 = st.columns([2, 3, 4, 3])
     c1.markdown(f"**patient {r.pid}**")
-    c2.markdown(f"`{r.archetype}`")
-    c3.markdown(f"risk {r.risk_now:.2f} · ETA {_eta_label(r)}  \n{_flags(r)}")
+    c2.markdown(f"Pattern: {ARCHETYPE_PATTERNS[r.archetype]}")
+    c3.markdown(f"STYX {styx_index(r.risk_now)} · ETA {_eta_label(r)}  \n{_flag_badges(r)}")
     with c4:
         _drill(r)
 
@@ -122,20 +140,22 @@ st.caption("Focus mode hides the stable bulk." if focus_mode
 st.dataframe(
     {
         "patient": [r.pid for r in board],
-        "archetype": [r.archetype for r in board],
+        "pattern": [ARCHETYPE_PATTERNS[r.archetype] for r in board],
         "status": [r.status for r in board],
-        "risk": [round(r.risk_now, 2) for r in board],
+        "STYX": [styx_index(r.risk_now) for r in board],
         "time-to-escalation": [_eta_label(r) for r in board],
-        "flags": [_flags(r) for r in board],
+        "flags": [_flag_text(r) for r in board],
     },
     width="stretch", hide_index=True,
 )
 
 # --- ECHO: similar past trajectories for a chosen patient (grounding, not a forecast) ----------
-_header("ECHO — similar cases", "echo")
+_header("Similar past trajectories (ECHO)", "echo")
 focus_pid = st.selectbox("Focus patient", [r.pid for r in at_risk] or [r.pid for r in rows],
                          format_func=lambda i: f"patient {i}")
 neighbours = echo_neighbours(cctx, focus_pid, now_idx)
 st.caption("Nearest synthetic trajectories by shape · "
            + " · ".join(f"patient {n.pid} ({n.outcome})" for n in neighbours))
 st.plotly_chart(echo_figure(cctx, focus_pid, neighbours, now_idx), width="stretch")
+
+st.caption(footer_text())

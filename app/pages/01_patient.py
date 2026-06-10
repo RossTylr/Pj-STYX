@@ -8,11 +8,20 @@ arranges, toggles disclosure, and renders — it computes nothing.
 import streamlit as st
 
 from styx.config import THRESHOLDS, VITALS
-from styx.explain import EXPLAINERS
+from styx.explain import (
+    ARCHETYPE_PATTERNS,
+    EXPLAINERS,
+    NEWS2_PARTIAL_LABEL,
+    OBS_AGE_TEMPLATE,
+    SCORE_CAPTION,
+)
 from styx.frame import build_context, patient_frame
+from styx.readouts import footer_text, sim_clock, styx_index
 from styx.synth import Archetype, build_cohort
+from styx.timeline import episode_timeline
 from styx.viz.cone import cone_figure
 from styx.viz.theograph import detail_strip_figure, ribbon_figure
+from styx.viz.timeline import timeline_figure
 from styx.viz.trajectory import trajectory_figure
 from styx.viz.waterline import waterline_figure
 
@@ -45,14 +54,15 @@ if st.session_state.get("scrub_pid") != pid:
     st.session_state["scrub_pos"] = default_pos
 
 st.sidebar.markdown("**Replay clock**")
-jump = st.sidebar.columns(4)
-if jump[0].button("Silent", help="silent window"):
+# 2×2 (not 4 across): a sidebar column split four ways is too narrow and wraps the labels.
+top, bottom = st.sidebar.columns(2), st.sidebar.columns(2)
+if top[0].button("Silent", help="silent window", width="stretch"):
     st.session_state["scrub_pos"] = default_pos
-if jump[1].button("AEGIS") and ctx.ticks["aegis"] is not None:
+if top[1].button("AEGIS", width="stretch") and ctx.ticks["aegis"] is not None:
     st.session_state["scrub_pos"] = ctx.indices.index(ctx.ticks["aegis"])
-if jump[2].button("Breach") and ctx.ticks["breach"] is not None:
+if bottom[0].button("Breach", width="stretch") and ctx.ticks["breach"] is not None:
     st.session_state["scrub_pos"] = ctx.indices.index(ctx.ticks["breach"])
-if jump[3].button("Step ▶"):
+if bottom[1].button("Step ▶", width="stretch"):
     st.session_state["scrub_pos"] = min(st.session_state["scrub_pos"] + 1, len(ctx.indices) - 1)
 
 _tickname = {idx: name.upper() for name, idx in ctx.ticks.items() if idx is not None}
@@ -83,18 +93,25 @@ def _header(title: str, cid: str) -> None:
 
 # --- title + status row -----------------------------------------------------------------------
 st.title(f"Patient {pid}")
-st.caption(f"{patient.archetype.value.replace('_', ' ').title()}  ·  `{patient.archetype.value}`")
+st.caption(f"Pattern: {ARCHETYPE_PATTERNS[patient.archetype.value]}")
 
 lead = ctx.fire.aegis_threshold_lead_min
 s1, s2, s3 = st.columns(3)
-s1.metric("Risk", f"{frame.risk_now:.2f}", frame.risk_verb, delta_color="off")
+s1.metric("STYX index", f"{styx_index(frame.risk_now)} / 100", frame.risk_verb, delta_color="off")
+s1.caption(SCORE_CAPTION)
 s2.metric("SENTINEL confidence", f"{frame.sentinel:.0%}", frame.sentinel_label, delta_color="off")
 s3.metric("AEGIS lead", f"{lead / 60:.1f} h" if lead else "—", "before threshold", delta_color="off")
+st.caption(OBS_AGE_TEMPLATE.format(clock=sim_clock(frame.now_min)))
 
 # --- hero: state-space trajectory -------------------------------------------------------------
 _header("State-space trajectory", "trajectory")
 st.plotly_chart(trajectory_figure(patient, ctx.emb, ctx.basins, events=ctx.on_path),
                 width="stretch")
+
+# --- episode timeline (build-once strip; static, independent of the scrub) --------------------
+_header("Episode timeline", "timeline")
+st.plotly_chart(timeline_figure(episode_timeline(ctx)), width="stretch")
+st.caption(NEWS2_PARTIAL_LABEL)
 
 # --- anticipation: waterline ‖ cone -----------------------------------------------------------
 left, right = st.columns(2)
@@ -104,10 +121,10 @@ with left:
                     width="stretch")
 with right:
     _header("Forecast cone", "cone")
-    show_ghost = st.checkbox("Ghost trail (forecast at AEGIS)", value=True)
+    show_ghost = st.checkbox("Hindsight forecast (forecast at early warning)", value=True)
     if explain_all:
         g = EXPLAINERS["ghost"]
-        st.caption(f"Ghost — {g.what}")
+        st.caption(f"Hindsight forecast — {g.what}")
     st.plotly_chart(
         cone_figure(patient.t_min, ctx.risk, frame.cone, THRESHOLDS.risk_escalation,
                     now_idx=now_idx, ghost=ctx.ghost if show_ghost else None),
@@ -135,3 +152,5 @@ with st.expander("Care history (Theograph)"):
 with st.expander("Raw vitals (SIG-1)"):
     _header("Raw vitals", "raw_vitals")
     st.line_chart({v: patient.vitals[v] for v in VITALS})
+
+st.caption(footer_text())

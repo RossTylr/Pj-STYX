@@ -167,7 +167,7 @@ This sub-system maps directly onto the existing STOCHASM toolkit (Hawkes, PDAF, 
 
 **The synthetic patient (F5).** One synthetic record carries two coherent strata:
 - **Theograph history** — a multi-year event log across channels: primary care, A&E, non-elective admissions, outpatient, mental health, social care. Event density and channel mix encode a latent frailty.
-- **Physiological episode** — continuous multi-stream telemetry for the virtual-ward stay, whose baseline, reserve, and crisis propensity are *conditioned on* that frailty. Deterioration scenarios are scripted (e.g. evolving sepsis / COPD exacerbation), replayable, and speed-controllable for the demo.
+- **Physiological episode** — continuous multi-stream telemetry for the virtual-ward stay, whose baseline, reserve, and crisis propensity are *conditioned on* that frailty. Deterioration scenarios are scripted (e.g. evolving sepsis / acute respiratory infection — pneumonia), replayable, and speed-controllable for the demo.
 
 **Pipeline.**
 ```
@@ -341,7 +341,7 @@ Rules that keep them cheap: import the package (never reimplement); build each a
 
 ## 15. Open questions
 
-- Which single condition anchors the demo — post-op sepsis, COPD exacerbation, or heart-failure decompensation? (Pick the one with the clearest physiological-coupling story for CADUCEUS.)
+- ~~Which single condition anchors the demo — post-op sepsis, COPD exacerbation, or heart-failure decompensation?~~ **Resolved: acute respiratory infection (pneumonia / happy-hypoxia)** — it matches the modelled physiology (healthy SpO₂ baseline, silent on-air desaturation, flat effort) and gives the clearest decoupling story; the NEWS2 comparator uses Scale 1 accordingly.
 - ~~Streamlit + Plotly, or a bespoke web front-end?~~ **Resolved: Streamlit + Plotly** (§9); React is the deployment-horizon rebuild.
 - Latent embedding: stable-but-generic (PCA/UMAP) for the core, with a VAE/latent-ODE only as its own reach?
 - Does the ward board lead, or the patient view? (Judging-narrative decision.)

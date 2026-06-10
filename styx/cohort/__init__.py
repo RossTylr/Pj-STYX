@@ -7,6 +7,7 @@ from styx.cohort.ranking import (
     CohortContext,
     WardRow,
     build_cohort_context,
+    eta_band,
     ward_frame,
 )
 
@@ -14,5 +15,6 @@ __all__ = [
     "CohortContext",
     "WardRow",
     "build_cohort_context",
+    "eta_band",
     "ward_frame",
 ]

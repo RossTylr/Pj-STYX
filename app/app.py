@@ -2,12 +2,11 @@
 
 import streamlit as st
 
-import styx
-from styx.config import RESCORE_CADENCE_MIN, VITALS
+from styx.explain import SCOPE_LINE
+from styx.readouts import footer_text
 
 st.set_page_config(page_title="STYX", layout="wide")
 st.title("STYX — virtual-ward trajectory monitor")
-st.caption(f"v{styx.__version__}")
 
 # Hard Rule 7: the demo is replay-of-synthetic; say so plainly. No real patient data.
 st.warning(
@@ -16,8 +15,11 @@ st.warning(
     icon="⚠️",
 )
 
-st.write(f"Vital set (SIG-1): {', '.join(VITALS)}")
-st.write(f"Re-score cadence: every {RESCORE_CADENCE_MIN} min (sim-time)")
+# (6b) Scope / blind-spot: what STYX sees, and what "no alert" must and must not be read as.
+st.info(SCOPE_LINE)
+
 st.info("Open the **Ward** board in the sidebar for cohort triage (rank by time-to-escalation, the "
         "silent-but-rising watchlist, ECHO look-alikes), then click a patient to drill into the "
         "integrated single-patient **Patient** view at the same moment.")
+
+st.caption(footer_text())

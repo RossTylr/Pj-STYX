@@ -34,7 +34,7 @@ the milestone gate, in order **R1 → R4 → R3 → R2**.
 ## S1 — Synthetic engine (F5) · `styx/synth`
 
 **Objective:** one coherent synthetic patient + cohort, deteriorating on cue.
-**Build:** a generator where a multi-year Theograph history (event density → latent frailty) *conditions* the physiological episode's baseline, reserve, and crisis propensity. One condition (COPD exacerbation). Script: a **dissociable silent window** (vitals in range, trend adverse) and a **genuine RR–SpO₂ decoupling** preceding any single-signal breach by ≥90 min. **≥12-patient cohort** with labelled outcomes correlated to history. Tight `VITALS` (RR, SpO₂, HR, temp + one labs proxy). Replay + speed; expose `rescore_cadence`.
+**Build:** a generator where a multi-year Theograph history (event density → latent frailty) *conditions* the physiological episode's baseline, reserve, and crisis propensity. One condition (acute respiratory infection — pneumonia / happy-hypoxia; *not* COPD — see scenario.py). Script: a **dissociable silent window** (vitals in range, trend adverse) and a **genuine RR–SpO₂ decoupling** preceding any single-signal breach by ≥90 min. **≥12-patient cohort** with labelled outcomes correlated to history. Tight `VITALS` (RR, SpO₂, HR, temp + one labs proxy). Replay + speed; expose `rescore_cadence`.
 **Gate:** **G1**. `tests/test_g1.py`.
 **Proof:** `notebooks/01_synthetic_fidelity` — plot the silent window, the decoupling + lead, the cohort outcome-vs-history correlation.
 **Done when:** `test_g1.py` green; G1 evidence renders; log entry.

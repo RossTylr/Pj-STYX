@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from styx.state.embedding import Basins, Embedding, now_position, trajectory_path
 from styx.synth.cohort import Patient
 from styx.theograph.events import CareEvent
+from styx.viz import palette as pal
 
 
 def _basin_shape(center, radius, color: str) -> dict:
@@ -37,12 +38,12 @@ def trajectory_figure(
     path = trajectory_path(patient, emb)
     now = now_position(patient, emb)
     fig = go.Figure()
-    fig.add_shape(_basin_shape(basins.basin_center, basins.basin_radius, "#2a8"))
+    fig.add_shape(_basin_shape(basins.basin_center, basins.basin_radius, pal.STABLE))
     for center, radius in zip(basins.attractor_centers, basins.attractor_radii):
-        fig.add_shape(_basin_shape(center, radius, "#c33"))  # one crisis mode per archetype
+        fig.add_shape(_basin_shape(center, radius, pal.THRESHOLD))  # one crisis mode per archetype
     fig.add_trace(go.Scatter(
         x=path[:, 0], y=path[:, 1], mode="lines+markers", name="trajectory",
-        line=dict(color="#888", width=1),
+        line=dict(color=pal.NEUTRAL, width=1),
         marker=dict(size=4, color=patient.t_min, colorscale="Viridis", showscale=False),
     ))
     if events:
@@ -50,11 +51,12 @@ def trajectory_figure(
             x=[float(path[i, 0]) for i, _ in events], y=[float(path[i, 1]) for i, _ in events],
             mode="markers", name="care event", text=[e.channel for _, e in events],
             hovertemplate="%{text}<extra></extra>",
-            marker=dict(size=12, symbol="diamond", color="#e80", line=dict(color="white", width=1)),
+            marker=dict(size=12, symbol="diamond", color=pal.EARLY_WARNING,
+                        line=dict(color="white", width=1)),
         ))
     fig.add_trace(go.Scatter(
         x=[now[0]], y=[now[1]], mode="markers", name="now",
-        marker=dict(size=18, color="#36c", line=dict(color="white", width=2)),
+        marker=dict(size=18, color=pal.NOW, line=dict(color="white", width=2)),
     ))
     fig.update_layout(
         title=f"State-space trajectory — patient {patient.pid} ({emb.mode} axes)",

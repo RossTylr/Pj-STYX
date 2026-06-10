@@ -11,6 +11,27 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+#: The single source for the modelled condition's name. The generator models pneumonia / COVID-style
+#: happy-hypoxia (SpO₂ baselined healthy, silently desaturating on air, effort flat, patient alert) —
+#: *not* COPD (which baselines chronically hypoxic, hypercapnic, with rising effort). One constant so
+#: every surface stays consistent and a relabel is a one-line change.
+CONDITION: str = "acute respiratory infection (pneumonia)"
+
+#: (6b) The scope/blind-spot line for the front page — what STYX sees, and what "no alert" means.
+SCOPE_LINE: str = (
+    "STYX sees RR, SpO₂, HR, Temp — no blood pressure, no consciousness level. "
+    "No alert means *review as normal*, never *safe*."
+)
+
+#: (6g) Lay "Pattern: …" labels for the deterioration archetypes — never the raw enum on a board.
+#: Keyed by ``Archetype.value``; honesty-linted (no raw enum token may appear in rendered output).
+ARCHETYPE_PATTERNS: dict[str, str] = {
+    "silent_hypoxia": "silent-hypoxia-like",
+    "compensated": "compensating",
+    "coupled": "coupled decline",
+    "stable": "stable / recovering",
+}
+
 
 @dataclass(frozen=True)
 class Explainer:
@@ -24,7 +45,7 @@ class Explainer:
 #: The component ids the pages render — the registry must cover exactly these (patient + ward).
 COMPONENTS: tuple[str, ...] = (
     "trajectory", "waterline", "aegis", "cone", "ghost",
-    "calliope", "sentinel", "theograph", "raw_vitals",
+    "calliope", "sentinel", "theograph", "raw_vitals", "timeline",
     "ward_board", "watchlist", "echo",
 )
 
@@ -56,9 +77,10 @@ EXPLAINERS: dict[str, Explainer] = {
         why="Anticipation with stated confidence, never false precision.",
     ),
     "ghost": Explainer(
-        what="The forecast we'd have made at the AEGIS moment, drawn over what actually happened.",
+        what="The hindsight forecast — the one we'd have made at the early warning (AEGIS) moment, "
+             "drawn over what actually happened.",
         how="It re-runs the same forecast from the earlier anchor.",
-        why="It shows the early warning was right — ghost and reality line up.",
+        why="It shows the early warning was right — the hindsight forecast and reality line up.",
     ),
     "calliope": Explainer(
         what="The plain reason for the current risk.",
@@ -84,6 +106,13 @@ EXPLAINERS: dict[str, Explainer] = {
         how="The measured numbers behind everything above.",
         why="Check the source signal yourself.",
     ),
+    "timeline": Explainer(
+        what="The episode as one strip: when each signal fires, and where escalation is projected.",
+        how="It reads the already-computed fire-points — early warning, forecast, the projected "
+            "window, the threshold crossing — and lays them on one time axis (no new calculation).",
+        why="One read of the order and the lead. The projected window is drawn as a band, never a "
+            "single time, so it can't imply false precision. (Synthetic replay.)",
+    ),
     "ward_board": Explainer(
         what="Every patient, ranked by how soon they're forecast to need escalation.",
         how="It re-scores the whole cohort at the current time and sorts by forecast time-to-"
@@ -106,3 +135,34 @@ EXPLAINERS: dict[str, Explainer] = {
             "patient.)",
     ),
 }
+
+#: Lay one-liners for the episode-timeline events — kept here so they're honesty-linted with the
+#: rest of the copy (``tests/test_explainer.py``). Keyed by the timeline event ``key``.
+TIMELINE_LABELS: dict[str, str] = {
+    "aegis": "early warning — deteriorating within their normal range",
+    "forecast": "forecast now confirms a trend toward escalation",
+    "eta": "escalation projected — timing uncertain",
+    "breach": "would cross the escalation threshold",
+}
+
+#: (6f) Caption under the STYX index — the index is a trajectory number, never a NEWS2 score.
+SCORE_CAPTION: str = "trajectory index — not NEWS2"
+
+#: (6i) Ordinal time-to-escalation bands — keyed by ``styx.readouts.eta_ordinal`` output. A band,
+#: never a spurious exact minute (UQ-1).
+ETA_BANDS: dict[str, str] = {
+    "lt30": "< 30 min",
+    "30_60": "30–60 min",
+    "1_2h": "1–2 h",
+    "gt2h": "> 2 h",
+    "unclear": "unclear",
+}
+
+#: (6c) Obs-age stamp — the honest provenance of a score (which observation it was scored on).
+OBS_AGE_TEMPLATE: str = "scored on obs at {clock} (sim)"
+
+#: Label for the partial-NEWS2 comparator — honest about which 3 of 7 params are not modelled (and
+#: that they are normal in this scenario by construction, so the partial equals the full score here).
+NEWS2_PARTIAL_LABEL: str = (
+    "NEWS2 (partial, Scale 1; 4 of 7 — BP, consciousness, O₂ not modelled, normal in this scenario)"
+)

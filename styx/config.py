@@ -68,6 +68,11 @@ CHANNELS: tuple[str, ...] = (
 )
 
 
+#: Reach feature flags — each reach is isolated and droppable without touching the MVP. The flag
+#: gates the R1b panel; defined here so the reach is flagged from birth.
+REACH_HISTORY: bool = True  # R1 — descriptive hazard stratification (no predictive-lift claim)
+
+
 @dataclass(frozen=True)
 class VitalRange:
     """Clinical normal-range bounds for one vital (a breach is leaving [low, high])."""

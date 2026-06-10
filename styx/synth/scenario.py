@@ -1,4 +1,9 @@
-"""One-patient physiology generator — COPD-exacerbation *archetypes* (F5 core).
+"""One-patient physiology generator — acute-respiratory-infection *archetypes* (F5 core).
+
+The modelled phenotype is pneumonia / COVID-style *happy-hypoxia*: SpO₂ baselined healthy (~97%),
+silently desaturating on air with breathing effort flat and the patient alert — the paradigm
+silent-hypoxia presentation. (It is deliberately *not* COPD: a retainer would baseline chronically
+hypoxic ~88–92%, hypercapnic, with rising visible effort. The NEWS2 comparator uses Scale 1.)
 
 DET-1: all randomness arrives via a passed ``np.random.Generator``; nothing here owns an RNG.
 The load-bearing physics: in the stable regime RR and SpO2 share a *fast* homeostatic

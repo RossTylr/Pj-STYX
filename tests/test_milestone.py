@@ -59,7 +59,7 @@ def test_all_ten_features_present() -> None:
     assert len(pt.get("plotly_chart")) >= 5
     assert any("AEGIS" in m.label for m in pt.metric)  # F7
     assert any("CALLIOPE" in md.value for md in pt.markdown)  # F8
-    assert any("Ghost" in cb.label for cb in pt.checkbox)  # F9
+    assert any("Hindsight forecast" in cb.label for cb in pt.checkbox)  # F9 (6j: ghost → hindsight)
 
     at = AppTest.from_file(_WARD, default_timeout=90).run()
     assert len(at.get("dataframe")) >= 1  # F6

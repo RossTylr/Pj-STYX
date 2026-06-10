@@ -14,7 +14,7 @@
 # %% [markdown]
 # # 01 — Synthetic fidelity (Gate G1)
 #
-# Proof for the **root gate**: the synthetic COPD cohort contains the phenomena the MVP claims
+# Proof for the **root gate**: the synthetic acute-respiratory-infection cohort contains the phenomena the MVP claims
 # to detect. This notebook *imports* `styx.synth` (LYR-1 — never reimplements) and renders the
 # G1 panels: the dissociable **silent window** (now silent hypoxia — SpO₂ falls, effort flat), the
 # genuine **RR–SpO₂ decoupling** with its lead over the breach, the **outcome-vs-history**

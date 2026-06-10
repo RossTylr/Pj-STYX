@@ -8,6 +8,8 @@ from __future__ import annotations
 import numpy as np
 import plotly.graph_objects as go
 
+from styx.viz import palette as pal
+
 
 def waterline_figure(
     t_min: np.ndarray,
@@ -19,14 +21,14 @@ def waterline_figure(
     """Render the risk waterline with the escalation threshold and the AEGIS fire marker."""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=t_min, y=risk, mode="lines", name="risk", line=dict(color="#36c", width=2),
-        fill="tozeroy", fillcolor="rgba(54,102,204,0.12)",
+        x=t_min, y=risk, mode="lines", name="risk", line=dict(color=pal.RISK, width=2),
+        fill="tozeroy", fillcolor=pal.RISK_FILL,
     ))
-    fig.add_hline(y=threshold, line=dict(color="#c33", width=1, dash="dot"),
+    fig.add_hline(y=threshold, line=dict(color=pal.THRESHOLD, width=1, dash="dot"),
                   annotation_text="escalation threshold")
     if aegis_idx is not None:
-        fig.add_vline(x=float(t_min[aegis_idx]), line=dict(color="#e80", width=2, dash="dash"),
-                      annotation_text="AEGIS")
+        fig.add_vline(x=float(t_min[aegis_idx]), line=dict(color=pal.EARLY_WARNING, width=2, dash="dash"),
+                      annotation_text="Early warning (AEGIS)")
     fig.update_layout(
         title="Risk waterline — rises early, crosses late",
         xaxis_title="sim-minutes", yaxis_title="risk", yaxis_range=[0, 1],

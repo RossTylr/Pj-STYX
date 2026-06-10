@@ -32,7 +32,14 @@ class ForecastCone:
 
 
 def _fit_trend(t: np.ndarray, y: np.ndarray) -> tuple[float, float]:
-    """Deterministic least-squares degree-1 fit → (slope, intercept) in sim-minute units."""
+    """Deterministic least-squares degree-1 fit → (slope, intercept) in sim-minute units.
+
+    A degenerate trailing window — a single sample, at the very first clock tick (now_idx 0) — has
+    no trend to fit, so project it flat (slope 0) from the lone value rather than letting polyfit's
+    SVD fail on an underdetermined system. Matches forecast_fire_index, which skips now_idx < window-1.
+    """
+    if t.size < 2:
+        return 0.0, float(y[-1]) if y.size else 0.0
     slope, intercept = np.polyfit(t, y, 1)
     return float(slope), float(intercept)
 

@@ -10,16 +10,10 @@ import plotly.graph_objects as go
 
 from styx.config import CHANNELS
 from styx.theograph.events import RECENT_DAYS, CareEvent
+from styx.viz import palette as pal
 
-#: Stable per-channel colours (fixed order → deterministic legend, never dict order).
-_CHANNEL_COLORS: dict[str, str] = {
-    "primary_care": "#2a8",
-    "ae": "#c33",
-    "non_elective_admission": "#e80",
-    "outpatient": "#36c",
-    "mental_health": "#93c",
-    "social_care": "#888",
-}
+#: Per-channel colours from the shared palette (fixed order → deterministic legend, never dict order).
+_CHANNEL_COLORS: dict[str, str] = pal.CHANNELS
 _LANE = {c: i for i, c in enumerate(CHANNELS)}  # row per channel, fixed order
 
 
@@ -48,7 +42,7 @@ def ribbon_figure(events: tuple[CareEvent, ...], *, now_days: float = 0.0) -> go
     """Compressed lifelong overview — one lane per channel, glyphs along a multi-year x-axis."""
     fig = go.Figure()
     _glyphs(fig, events, [e.t_days / 365.25 for e in events])
-    fig.add_vline(x=now_days / 365.25, line=dict(color="#222", width=1, dash="dot"),
+    fig.add_vline(x=now_days / 365.25, line=dict(color=pal.ANNOTATION, width=1, dash="dot"),
                   annotation_text="now")
     _lane_axis(fig)
     fig.update_layout(
@@ -65,7 +59,7 @@ def detail_strip_figure(
     recent = tuple(e for e in events if e.t_days >= -window_days)
     fig = go.Figure()
     _glyphs(fig, recent, [e.t_days for e in recent])
-    fig.add_vline(x=0.0, line=dict(color="#222", width=1, dash="dot"), annotation_text="now")
+    fig.add_vline(x=0.0, line=dict(color=pal.ANNOTATION, width=1, dash="dot"), annotation_text="now")
     _lane_axis(fig)
     fig.update_layout(
         title=f"Theograph — last {int(window_days)} days", xaxis_title="days before now",
