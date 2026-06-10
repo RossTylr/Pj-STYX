@@ -11,9 +11,6 @@ package; `app/` (Streamlit + Plotly) and `notebooks/` are thin clients of it.
 **[Open the STYX demo](https://pj-styx.streamlit.app)**
 &nbsp;·&nbsp; `https://pj-styx.streamlit.app`
 
-> **Placeholder URL** — replace with your real Streamlit Community Cloud URL
-> once the app is deployed (see [Deploy](#deploy-to-streamlit-community-cloud)).
-
 > **The demo is a replay of synthetic data — no real patient data, and not a live
 > or streaming deployment.** The deployment target (A3) is described in the docs;
 > the MVP serves an A2 windowed re-score over replay.
