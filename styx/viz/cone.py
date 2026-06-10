@@ -8,6 +8,7 @@ from __future__ import annotations
 import numpy as np
 import plotly.graph_objects as go
 
+from styx.explain import DISPLAY_NAMES
 from styx.forecast import ForecastCone
 from styx.viz import palette as pal
 
@@ -34,24 +35,24 @@ def cone_figure(
             line=dict(color=pal.EARLY_WARNING, width=2, dash="dot"), opacity=0.7,
         ))
     fig.add_trace(go.Scatter(
-        x=t_min[: now_idx + 1], y=series[: now_idx + 1], mode="lines", name="risk (observed)",
+        x=t_min[: now_idx + 1], y=series[: now_idx + 1], mode="lines", name="observed risk",
         line=dict(color=pal.RISK, width=2),
     ))
-    # Conformal band as a filled envelope (upper out, lower back) — widens with the horizon.
+    # Calibrated forecast band as a filled envelope (upper out, lower back) — widens with the horizon.
     band_x = np.concatenate([cone.t_fore, cone.t_fore[::-1]])
     band_y = np.concatenate([cone.upper, cone.lower[::-1]])
     fig.add_trace(go.Scatter(
         x=band_x, y=band_y, fill="toself", fillcolor=pal.CONE_FILL,
-        line=dict(width=0), name="conformal cone", hoverinfo="skip",
+        line=dict(width=0), name="forecast band (90%)", hoverinfo="skip",
     ))
     fig.add_trace(go.Scatter(
-        x=cone.t_fore, y=cone.point, mode="lines", name="forecast",
+        x=cone.t_fore, y=cone.point, mode="lines", name="central forecast",
         line=dict(color=pal.RISK, width=1, dash="dash"),
     ))
     fig.add_hline(y=threshold, line=dict(color=pal.THRESHOLD, width=1, dash="dot"),
                   annotation_text="escalation threshold")
     fig.update_layout(
-        title="Forecast cone — risk projected past now",
+        title=f"{DISPLAY_NAMES['cone']} — risk projected ahead",
         xaxis_title="sim-minutes", yaxis_title="risk", yaxis_range=[0, 1],
         height=420, showlegend=True,
     )

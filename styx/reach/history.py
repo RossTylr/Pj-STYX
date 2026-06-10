@@ -20,6 +20,7 @@ from lifelines import CoxPHFitter, KaplanMeierFitter
 from lifelines.statistics import logrank_test
 
 from styx.cohort.ranking import CohortContext
+from styx.explain import KM_STRATUM_LABELS
 
 _RESIDUAL_QUANTILE: float = 0.25  # bottom-quartile care history — matches ranking.new_low_history
 
@@ -30,7 +31,7 @@ class KMCurve:
 
     t_min: np.ndarray  # step times (sim-minutes)
     survival: np.ndarray  # S(t) — fraction not-yet-escalated
-    label: str  # "denser history" | "thinner history"
+    label: str  # KM_STRATUM_LABELS["high"] | ["low"] — the plain stratum name the panel renders
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,7 @@ class HazardStratification:
     logrank_p: float  # high- vs low-density stratum separation
     high: KMCurve  # above-median density stratum
     low: KMCurve  # at/below-median density stratum
+    median_density: float  # the split point — lets a viz place a patient's stratum (no recompute)
     residual_pids: tuple[int, ...]  # thin history yet escalated — the honest residual (pid 39)
     n_events: int
 
@@ -94,8 +96,9 @@ def stratify(cctx: CohortContext) -> HazardStratification:
         hr_ci=(lo_ci, hi_ci),
         c_index=float(cph.concordance_index_),
         logrank_p=float(lr.p_value),
-        high=_km_curve(hi_df, "denser history"),
-        low=_km_curve(lo_df, "thinner history"),
+        high=_km_curve(hi_df, KM_STRATUM_LABELS["high"]),
+        low=_km_curve(lo_df, KM_STRATUM_LABELS["low"]),
+        median_density=median,
         residual_pids=residuals,
         n_events=int(df["event"].sum()),
     )

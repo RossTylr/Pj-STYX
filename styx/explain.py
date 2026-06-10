@@ -46,8 +46,27 @@ class Explainer:
 COMPONENTS: tuple[str, ...] = (
     "trajectory", "waterline", "aegis", "cone", "ghost",
     "calliope", "sentinel", "theograph", "raw_vitals", "timeline",
-    "ward_board", "watchlist", "echo",
+    "ward_board", "watchlist", "echo", "history",
 )
+
+#: (S5.7) The single source for plain UK-clinical display labels — codenames live only in the code
+#: (function/module/key identifiers, docstrings); plain English faces the ward. Keyed by the same
+#: component/role ids the pages use, so a page or a viz builder renders ``DISPLAY_NAMES[key]`` rather
+#: than a Greek codename. STYX (product name) and the Pattern labels (ARCHETYPE_PATTERNS) stay as-is.
+#: ``caduceus``/``charon`` are reserved here so the reaches ship plain from their first panel.
+DISPLAY_NAMES: dict[str, str] = {
+    "aegis": "Early warning",
+    "calliope": "Why this score",
+    "sentinel": "Confidence",
+    "echo": "Similar past patients",
+    "waterline": "Risk over time",
+    "cone": "Forecast range",
+    "trajectory": "Trajectory",
+    "ghost": "Hindsight forecast",
+    "history": "History-based risk",  # R1 history-as-prior hazard panel
+    "caduceus": "How the vital signs move together",  # reserved for R3
+    "charon": "Projected care events",  # reserved for R2
+}
 
 EXPLAINERS: dict[str, Explainer] = {
     "trajectory": Explainer(
@@ -77,7 +96,7 @@ EXPLAINERS: dict[str, Explainer] = {
         why="Anticipation with stated confidence, never false precision.",
     ),
     "ghost": Explainer(
-        what="The hindsight forecast — the one we'd have made at the early warning (AEGIS) moment, "
+        what="The hindsight forecast — the one we'd have made at the early-warning moment, "
              "drawn over what actually happened.",
         how="It re-runs the same forecast from the earlier anchor.",
         why="It shows the early warning was right — the hindsight forecast and reality line up.",
@@ -131,8 +150,18 @@ EXPLAINERS: dict[str, Explainer] = {
         how="It finds the nearest trajectories in the same constructed state space, matched on "
             "shape rather than a single reading.",
         why="It grounds the case in similar ones — context, not a prediction. (Other synthetic "
-            "patients; outcomes are synthetic labels; ECHO illustrates, it does not forecast this "
-            "patient.)",
+            "patients; outcomes are synthetic labels; this view illustrates, it does not forecast "
+            "this patient.)",
+    ),
+    "history": Explainer(
+        what="How rich the patient's recent care history is, and how that tracks the time it takes "
+             "to reach escalation across the ward.",
+        how="A proportional-hazards model on care-event density, plus a median split tested with a "
+            "log-rank test; the curves show patients with denser history reach escalation sooner.",
+        why="A descriptive association, not a cause — denser history flags a sicker patient; it does "
+            "not make them deteriorate faster. It adds no measurable accuracy over the live vital-"
+            "sign signal here, and it misses patients who deteriorate on thin history (patients 7 "
+            "and 39), so a stratum is a prior, never a safety guarantee. (Synthetic replay.)",
     ),
 }
 
@@ -143,6 +172,13 @@ TIMELINE_LABELS: dict[str, str] = {
     "forecast": "forecast now confirms a trend toward escalation",
     "eta": "escalation projected — timing uncertain",
     "breach": "would cross the escalation threshold",
+}
+
+#: (R1) The two care-history strata for the hazard panel — the single source for ``KMCurve.label``
+#: (imported by ``styx.reach.history``) and the legend the panel renders. Honesty-linted as copy.
+KM_STRATUM_LABELS: dict[str, str] = {
+    "high": "Denser recent care history",
+    "low": "Thinner recent care history",
 }
 
 #: (6f) Caption under the STYX index — the index is a trajectory number, never a NEWS2 score.

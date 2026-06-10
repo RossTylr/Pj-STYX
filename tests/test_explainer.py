@@ -5,20 +5,24 @@ and it never over-claims (honesty lint) — no "predicts the patient" / "diagnos
 patient" / "real-time", while keeping the synthetic/replay/constructed anchors. Evidence comes from
 styx.explain (LYR-1: imported, never reimplemented)."""
 
+import re
 from pathlib import Path
 
 from styx.explain import (
     ARCHETYPE_PATTERNS,
     COMPONENTS,
     CONDITION,
+    DISPLAY_NAMES,
     ETA_BANDS,
     EXPLAINERS,
+    KM_STRATUM_LABELS,
     NEWS2_PARTIAL_LABEL,
     SCOPE_LINE,
     SCORE_CAPTION,
     TIMELINE_LABELS,
 )
 from styx.synth import Archetype
+from styx.timeline import _TECH_LABELS
 
 _STYX = Path(__file__).resolve().parent.parent / "styx"
 
@@ -26,6 +30,9 @@ _STYX = Path(__file__).resolve().parent.parent / "styx"
 _FORBIDDEN = ("predicts the patient", "diagnoses", "learns the patient", "real-time")
 #: Honesty anchors that must appear somewhere in the registry (present "where relevant").
 _ANCHORS = ("synthetic", "replay", "constructed")
+#: (S5.7) Engineer's codenames the user-facing copy must never carry — plain-only, no exemptions.
+#: They survive as code identifiers (keys, modules) and DISPLAY_NAMES is what the pages render.
+_CODENAMES = ("aegis", "sentinel", "calliope", "echo", "caduceus", "charon")
 
 
 def test_registry_covers_every_component() -> None:
@@ -58,6 +65,25 @@ def test_honesty_anchors_present() -> None:
     blob = " ".join(f"{e.what} {e.how} {e.why}" for e in EXPLAINERS.values()).lower()
     missing = [a for a in _ANCHORS if a not in blob]
     assert not missing, f"missing honesty anchors: {missing}"
+
+
+def test_no_codename_in_copy() -> None:
+    # (S5.7/S5.8) Plain-only lint over every display-bound string map: no card, timeline label,
+    # display name, technical episode label, pattern label, or ETA band may carry a codename. The
+    # rendered guard is tests/test_no_codename.py; this keeps the source copy clean at the registry.
+    # _TECH_LABELS is the clinician-facing episode strip (R4) — guarded plain before it ever renders.
+    values = (
+        [f"{e.what} {e.how} {e.why}" for e in EXPLAINERS.values()]
+        + list(TIMELINE_LABELS.values())
+        + list(DISPLAY_NAMES.values())
+        + list(_TECH_LABELS.values())
+        + list(ARCHETYPE_PATTERNS.values())
+        + list(ETA_BANDS.values())
+        + list(KM_STRATUM_LABELS.values())
+    )
+    for text in values:
+        hit = [c for c in _CODENAMES if re.search(rf"\b{c}\b", text, re.IGNORECASE)]
+        assert not hit, f"codename leaked into copy {text!r}: {hit}"
 
 
 # --- S5.6 new copy: the honesty-lint extended to the index caption, NEWS2 label, scope, bands ---

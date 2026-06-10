@@ -10,7 +10,7 @@ import streamlit as st
 
 from styx.cohort import build_cohort_context, ward_frame
 from styx.cohort.echo import echo_neighbours
-from styx.explain import ARCHETYPE_PATTERNS, ETA_BANDS, EXPLAINERS, OBS_AGE_TEMPLATE
+from styx.explain import ARCHETYPE_PATTERNS, DISPLAY_NAMES, ETA_BANDS, EXPLAINERS, OBS_AGE_TEMPLATE
 from styx.readouts import eta_ordinal, footer_text, sim_clock, styx_index
 from styx.synth import build_cohort
 from styx.viz import palette as pal
@@ -150,7 +150,7 @@ st.dataframe(
 )
 
 # --- ECHO: similar past trajectories for a chosen patient (grounding, not a forecast) ----------
-_header("Similar past trajectories (ECHO)", "echo")
+_header(DISPLAY_NAMES["echo"], "echo")
 focus_pid = st.selectbox("Focus patient", [r.pid for r in at_risk] or [r.pid for r in rows],
                          format_func=lambda i: f"patient {i}")
 neighbours = echo_neighbours(cctx, focus_pid, now_idx)

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import plotly.graph_objects as go
 
+from styx.explain import DISPLAY_NAMES
 from styx.state.embedding import Basins, Embedding, now_position, trajectory_path
 from styx.synth.cohort import Patient
 from styx.theograph.events import CareEvent
@@ -59,7 +60,7 @@ def trajectory_figure(
         marker=dict(size=18, color=pal.NOW, line=dict(color="white", width=2)),
     ))
     fig.update_layout(
-        title=f"State-space trajectory — patient {patient.pid} ({emb.mode} axes)",
+        title=f"{DISPLAY_NAMES['trajectory']} — patient {patient.pid} ({emb.mode} axes)",
         xaxis_title=emb.axis_labels[0], yaxis_title=emb.axis_labels[1],
         height=480, showlegend=True,
     )

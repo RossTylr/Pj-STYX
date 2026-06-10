@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 
 from styx.cohort.echo import EchoNeighbour
 from styx.cohort.ranking import CohortContext
+from styx.explain import DISPLAY_NAMES
 from styx.state import trajectory_path
 from styx.viz import palette as pal
 
@@ -48,7 +49,7 @@ def echo_figure(
         marker=dict(size=16, color=pal.NOW, line=dict(color="white", width=2)),
     ))
     fig.update_layout(
-        title="Similar past trajectories (ECHO) — illustration, not a forecast of this patient",
+        title=f"{DISPLAY_NAMES['echo']} — illustration, not a forecast of this patient",
         xaxis_title=cctx.emb.axis_labels[0], yaxis_title=cctx.emb.axis_labels[1],
         height=480, showlegend=True,
     )

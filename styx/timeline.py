@@ -12,14 +12,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from styx.cohort.ranking import eta_band
-from styx.explain import TIMELINE_LABELS
+from styx.explain import DISPLAY_NAMES, TIMELINE_LABELS
 from styx.forecast import project
 from styx.frame import PatientContext
 from styx.readouts import news2_crossing
 
 #: Technical (clinician-facing) labels; the lay one-liners live in ``styx.explain.TIMELINE_LABELS``.
 _TECH_LABELS: dict[str, str] = {
-    "aegis": "AEGIS fire — baseline departure",
+    "aegis": f"{DISPLAY_NAMES['aegis']} — baseline departure",
     "forecast": "forecast fire — cone reaches threshold",
     "eta": "projected escalation (banded)",
     "breach": "absolute threshold breach",
@@ -48,6 +48,7 @@ class EpisodeTimeline:
     default_idx: int  # the silent-window frame the ETA band is projected from (the money shot)
     events: tuple[TimelineEvent, ...]
     news2_crossing_min: float | None = None  # comparator: when the partial NEWS2 would escalate
+    end_min: float | None = None  # last sim-minute of the stay (the right edge of the gantt lanes)
 
     def _idx(self, key: str) -> int | None:
         return next((e.idx for e in self.events if e.key == key), None)
@@ -96,4 +97,6 @@ def episode_timeline(ctx: PatientContext) -> EpisodeTimeline:
     # The named-standard comparator (read-only over vitals): when NEWS2 would first escalate.
     news2 = news2_crossing(ctx.patient)
 
-    return EpisodeTimeline(ctx.patient.pid, di, (aegis, forecast, eta, breach), news2)
+    return EpisodeTimeline(
+        ctx.patient.pid, di, (aegis, forecast, eta, breach), news2, float(t[-1]),
+    )

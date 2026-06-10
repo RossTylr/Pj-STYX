@@ -12,6 +12,7 @@ from streamlit.testing.v1 import AppTest
 from styx.anticipation import fire_times
 from styx.cohort import build_cohort_context, ward_frame
 from styx.cohort.echo import echo_neighbours
+from styx.explain import DISPLAY_NAMES
 from styx.synth import build_cohort
 
 _WARD = "app/pages/02_ward.py"
@@ -57,8 +58,8 @@ def test_all_ten_features_present() -> None:
     assert not pt.exception
     # F1 trajectory + F2 cone + F4 waterline + F3 theograph (ribbon + detail strip) = ≥5 charts.
     assert len(pt.get("plotly_chart")) >= 5
-    assert any("AEGIS" in m.label for m in pt.metric)  # F7
-    assert any("CALLIOPE" in md.value for md in pt.markdown)  # F8
+    assert any(DISPLAY_NAMES["aegis"] in m.label for m in pt.metric)  # F7 (early-warning lead)
+    assert any(DISPLAY_NAMES["calliope"] in md.value for md in pt.markdown)  # F8 (why this score)
     assert any("Hindsight forecast" in cb.label for cb in pt.checkbox)  # F9 (6j: ghost → hindsight)
 
     at = AppTest.from_file(_WARD, default_timeout=90).run()

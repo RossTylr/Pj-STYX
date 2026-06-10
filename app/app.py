@@ -19,7 +19,8 @@ st.warning(
 st.info(SCOPE_LINE)
 
 st.info("Open the **Ward** board in the sidebar for cohort triage (rank by time-to-escalation, the "
-        "silent-but-rising watchlist, ECHO look-alikes), then click a patient to drill into the "
+        "silent-but-rising watchlist, similar-patient look-alikes), then click a patient to drill "
+        "into the "
         "integrated single-patient **Patient** view at the same moment.")
 
 st.caption(footer_text())

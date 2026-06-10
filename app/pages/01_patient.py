@@ -10,16 +10,20 @@ import streamlit as st
 from styx.config import THRESHOLDS, VITALS
 from styx.explain import (
     ARCHETYPE_PATTERNS,
+    DISPLAY_NAMES,
     EXPLAINERS,
     NEWS2_PARTIAL_LABEL,
     OBS_AGE_TEMPLATE,
     SCORE_CAPTION,
 )
+from styx.cohort import build_cohort_context
 from styx.frame import build_context, patient_frame
+from styx.reach.history import stratify
 from styx.readouts import footer_text, sim_clock, styx_index
 from styx.synth import Archetype, build_cohort
 from styx.timeline import episode_timeline
 from styx.viz.cone import cone_figure
+from styx.viz.hazard import hazard_figure
 from styx.viz.theograph import detail_strip_figure, ribbon_figure
 from styx.viz.timeline import timeline_figure
 from styx.viz.trajectory import trajectory_figure
@@ -36,6 +40,12 @@ st.warning(
 def _context(pid: int):
     cohort = build_cohort(seed=42)
     return cohort.patients[pid], build_context(cohort, cohort.patients[pid])
+
+
+@st.cache_resource
+def _hazard():
+    # Cohort-wide history-as-prior stratification — same for every patient, so fit once (no pid arg).
+    return stratify(build_cohort_context(build_cohort(seed=42)))
 
 
 # --- sidebar controls -------------------------------------------------------------------------
@@ -58,14 +68,16 @@ st.sidebar.markdown("**Replay clock**")
 top, bottom = st.sidebar.columns(2), st.sidebar.columns(2)
 if top[0].button("Silent", help="silent window", width="stretch"):
     st.session_state["scrub_pos"] = default_pos
-if top[1].button("AEGIS", width="stretch") and ctx.ticks["aegis"] is not None:
+if top[1].button(DISPLAY_NAMES["aegis"], width="stretch") and ctx.ticks["aegis"] is not None:
     st.session_state["scrub_pos"] = ctx.indices.index(ctx.ticks["aegis"])
 if bottom[0].button("Breach", width="stretch") and ctx.ticks["breach"] is not None:
     st.session_state["scrub_pos"] = ctx.indices.index(ctx.ticks["breach"])
 if bottom[1].button("Step ▶", width="stretch"):
     st.session_state["scrub_pos"] = min(st.session_state["scrub_pos"] + 1, len(ctx.indices) - 1)
 
-_tickname = {idx: name.upper() for name, idx in ctx.ticks.items() if idx is not None}
+# Clock-tick labels: plain display name for codename ticks (e.g. aegis), else the upper-cased key.
+_tickname = {idx: DISPLAY_NAMES.get(name, name.upper())
+             for name, idx in ctx.ticks.items() if idx is not None}
 
 
 def _clock_label(i: int) -> str:
@@ -99,12 +111,13 @@ lead = ctx.fire.aegis_threshold_lead_min
 s1, s2, s3 = st.columns(3)
 s1.metric("STYX index", f"{styx_index(frame.risk_now)} / 100", frame.risk_verb, delta_color="off")
 s1.caption(SCORE_CAPTION)
-s2.metric("SENTINEL confidence", f"{frame.sentinel:.0%}", frame.sentinel_label, delta_color="off")
-s3.metric("AEGIS lead", f"{lead / 60:.1f} h" if lead else "—", "before threshold", delta_color="off")
+s2.metric(DISPLAY_NAMES["sentinel"], f"{frame.sentinel:.0%}", frame.sentinel_label, delta_color="off")
+s3.metric(f"{DISPLAY_NAMES['aegis']} lead", f"{lead / 60:.1f} h" if lead else "—",
+          "before threshold", delta_color="off")
 st.caption(OBS_AGE_TEMPLATE.format(clock=sim_clock(frame.now_min)))
 
 # --- hero: state-space trajectory -------------------------------------------------------------
-_header("State-space trajectory", "trajectory")
+_header(DISPLAY_NAMES["trajectory"], "trajectory")
 st.plotly_chart(trajectory_figure(patient, ctx.emb, ctx.basins, events=ctx.on_path),
                 width="stretch")
 
@@ -113,26 +126,33 @@ _header("Episode timeline", "timeline")
 st.plotly_chart(timeline_figure(episode_timeline(ctx)), width="stretch")
 st.caption(NEWS2_PARTIAL_LABEL)
 
-# --- anticipation: waterline ‖ cone -----------------------------------------------------------
-left, right = st.columns(2)
-with left:
-    _header("Risk waterline", "waterline")
-    st.plotly_chart(waterline_figure(patient.t_min, ctx.risk, ctx.threshold, aegis_idx=ctx.aegis_idx),
-                    width="stretch")
-with right:
-    _header("Forecast cone", "cone")
-    show_ghost = st.checkbox("Hindsight forecast (forecast at early warning)", value=True)
-    if explain_all:
-        g = EXPLAINERS["ghost"]
-        st.caption(f"Hindsight forecast — {g.what}")
-    st.plotly_chart(
-        cone_figure(patient.t_min, ctx.risk, frame.cone, THRESHOLDS.risk_escalation,
-                    now_idx=now_idx, ghost=ctx.ghost if show_ghost else None),
-        width="stretch",
-    )
+# --- anticipation: risk waterline, then forecast cone — stacked full width --------------------
+_header(DISPLAY_NAMES["waterline"], "waterline")
+st.plotly_chart(waterline_figure(patient.t_min, ctx.risk, ctx.threshold, aegis_idx=ctx.aegis_idx),
+                width="stretch")
+
+# --- history-as-prior (R1): additive, full width below the waterline — the live signal is untouched
+_header(DISPLAY_NAMES["history"], "history")
+hz = _hazard()
+st.plotly_chart(hazard_figure(hz, focus_density=float(sum(patient.theograph.values()))),
+                width="stretch")
+st.caption(f"Hazard ratio {hz.hazard_ratio:.2f} per care event "
+           f"(95% CI {hz.hr_ci[0]:.2f}–{hz.hr_ci[1]:.2f}); concordance {hz.c_index:.2f}; "
+           f"log-rank p {hz.logrank_p:.3f}. Descriptive association, not predictive lift.")
+
+_header(DISPLAY_NAMES["cone"], "cone")
+show_ghost = st.checkbox("Hindsight forecast (forecast at early warning)", value=True)
+if explain_all:
+    g = EXPLAINERS["ghost"]
+    st.caption(f"Hindsight forecast — {g.what}")
+st.plotly_chart(
+    cone_figure(patient.t_min, ctx.risk, frame.cone, THRESHOLDS.risk_escalation,
+                now_idx=now_idx, ghost=ctx.ghost if show_ghost else None),
+    width="stretch",
+)
 
 # --- CALLIOPE: headline always; contributors only when they still sum to the risk -------------
-_header("CALLIOPE — why this risk", "calliope")
+_header(DISPLAY_NAMES["calliope"], "calliope")
 st.markdown(f"**{frame.rationale.headline}**")
 if frame.rationale.additive and frame.rationale.top_k[0][1] > 0:
     with st.expander("Show contributions (analyst)"):
