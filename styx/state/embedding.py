@@ -1,7 +1,7 @@
 """F1 — deterministic 2-D state embedding + learned basin / crisis-attractor geometry.
 
 PCA-first (DET-1: full-SVD PCA on standardised vitals, no RNG → bit-identical coordinates).
-Standardisation is essential: SpO₂ (94–100), labs_proxy (0–1) and HR (60–100) live on wildly
+Standardisation is essential: SpO₂ (94–100), RR (12–20) and HR (60–100) live on wildly
 different scales, so an un-standardised PCA axis is just whichever vital has the largest raw
 variance. ``fit_embedding`` auto-forks: keep PCA if its axes are legible against the named
 constructs, else fall back to a hand-built oxygenation × effort projection (gate G2).
@@ -22,7 +22,7 @@ _CONSTRUCTS = {"oxygenation": oxygenation, "effort": effort}
 
 
 def _vital_matrix(p: Patient) -> np.ndarray:
-    """Patient vitals as an (N_SAMPLES, 5) matrix, columns in VITALS order."""
+    """Patient vitals as an (N_SAMPLES, len(VITALS)) matrix, columns in VITALS order."""
     return np.column_stack([p.vitals[v] for v in VITALS])
 
 
@@ -48,7 +48,7 @@ class Embedding:
     mode: str  # "pca" | "constructed"
 
     def transform(self, vitals: np.ndarray) -> np.ndarray:
-        """Map an (N, 5) VITALS matrix to (N, 2) latent coordinates."""
+        """Map an (N, len(VITALS)) matrix to (N, 2) latent coordinates."""
         return ((vitals - self.mean_) / self.scale_) @ self.components_.T
 
 

@@ -1,14 +1,141 @@
-"""Ward board (stub) — the cohort triage view lands in Slice S5 (F6 + F10).
+"""Ward board (STYX cohort triage) — F6 risk-ranked board + F10 ECHO, on the shared replay clock.
 
-Placeholder so the two-screen nav scaffold exists now; no logic (LYR-1).
+LYR-1: a thin client. Every row comes from ``styx.cohort`` (one ``ward_frame`` per scrub); the ECHO
+figure from a ``styx.viz`` pure builder; every explainer line from ``styx.explain``. This page only
+arranges, toggles disclosure, and renders — it computes nothing. The clock is the *same* one the
+patient page scrubs (shared ``scrub_pos``), so a click drills straight through at the same moment.
 """
 
 import streamlit as st
+
+from styx.cohort import build_cohort_context, ward_frame
+from styx.cohort.echo import echo_neighbours
+from styx.explain import EXPLAINERS
+from styx.synth import build_cohort
+from styx.viz.echo import echo_figure
 
 st.set_page_config(page_title="STYX — ward", layout="wide")
 st.warning(
     "Demo mode: **replay of synthetic data** — no real patient data, not a live deployment.",
     icon="⚠️",
 )
+
+TOP_N = 5  # focus mode keeps the watchlist + this many of the soonest-to-escalate
+
+
+@st.cache_resource
+def _cctx():
+    return build_cohort_context(build_cohort(seed=42))
+
+
+cctx = _cctx()
+
+# --- shared replay clock (same key the patient page scrubs) ------------------------------------
+default_pos = cctx.indices.index(cctx.default_idx)
+if "scrub_pos" not in st.session_state:
+    st.session_state["scrub_pos"] = default_pos
+
+st.sidebar.markdown("**Replay clock**")
+if st.sidebar.button("Silent window", help="the cohort's silent-window frame"):
+    st.session_state["scrub_pos"] = default_pos
+focus_mode = st.sidebar.toggle("Focus mode", value=False,
+                               help="Collapse to the watchlist + the soonest-to-escalate.")
+explain_all = st.sidebar.toggle("Explain this page", value=False,
+                                help="Show a plain what / how / why under every panel.")
+
+
+def _clock_label(i: int) -> str:
+    return f"{int(cctx.t_min[cctx.indices[i]])} min"
+
+
+pos = st.sidebar.select_slider("clock", options=range(len(cctx.indices)), key="scrub_pos",
+                               format_func=_clock_label, label_visibility="collapsed")
+now_idx = cctx.indices[pos]
+rows = ward_frame(cctx, now_idx)
+
+
+def _header(title: str, cid: str) -> None:
+    """A panel title with an ⓘ popover (and an inline card when 'Explain this page' is on)."""
+    a, b = st.columns([9, 1])
+    a.markdown(f"#### {title}")
+    e = EXPLAINERS[cid]
+    with b, st.popover("ⓘ"):
+        st.markdown(f"**What** — {e.what}\n\n**How** — {e.how}\n\n**Why** — {e.why}")
+    if explain_all:
+        st.info(f"**What** {e.what}\n\n**How** {e.how}\n\n**Why** {e.why}")
+
+
+def _eta_label(r) -> str:
+    """The banded time-to-escalation as text — a range, never a hard minute (UQ-1)."""
+    if r.status == "escalated":
+        return "over the line"
+    if r.status == "no-forecast":
+        return "—"
+    if r.eta_confident and r.eta_central_min is not None:
+        return f"~{r.eta_soonest_min:.0f}–{r.eta_central_min:.0f} min"
+    return f"~{r.eta_soonest_min:.0f}+ min (low confidence)"
+
+
+def _flags(r) -> str:
+    tags = []
+    if r.silent_but_rising:
+        tags.append("🔵 silent-but-rising")
+    if r.quietest:
+        tags.append("🟢 quietest")
+    if r.new_low_history:
+        tags.append("🟠 new low-history")
+    return " · ".join(tags)
+
+
+def _drill(r) -> None:
+    """Click-through → the patient page at the SAME clock t. Setting scrub_pid to the target first
+    means the patient page's reset branch (``scrub_pid != pid``) does not fire — t is carried."""
+    if st.button(f"Open patient {r.pid} →", key=f"open_{r.pid}"):
+        st.session_state["patient_pick"] = r.pid  # drive the patient page's selectbox
+        st.session_state["scrub_pid"] = r.pid  # match → its reset branch is skipped
+        st.session_state["scrub_pos"] = pos
+        st.switch_page("pages/01_patient.py")
+
+
 st.title("Ward board")
-st.info("Cohort triage (F6 risk-ranked board + F10 ward-level lead) lands in Slice S5.")
+st.caption(f"Cohort re-scored at **{int(cctx.t_min[now_idx])} min** · {len(rows)} patients")
+
+# --- watchlist: the silent-but-rising patients a threshold board would show green --------------
+watch = [r for r in rows if r.silent_but_rising]
+_header(f"Watchlist — silent but rising ({len(watch)})", "watchlist")
+if not watch:
+    st.caption("No silent risers at this frame.")
+for r in watch[: (TOP_N if focus_mode else len(watch))]:
+    c1, c2, c3, c4 = st.columns([2, 3, 4, 3])
+    c1.markdown(f"**patient {r.pid}**")
+    c2.markdown(f"`{r.archetype}`")
+    c3.markdown(f"risk {r.risk_now:.2f} · ETA {_eta_label(r)}  \n{_flags(r)}")
+    with c4:
+        _drill(r)
+
+# --- the full triage board (ranked by soonest-to-escalate) ------------------------------------
+at_risk = [r for r in rows if r.status in ("escalated", "escalating")]
+board = (at_risk[:TOP_N] if focus_mode else rows)
+_header("Triage board — ranked by time-to-escalation", "ward_board")
+st.caption("Focus mode hides the stable bulk." if focus_mode
+           else "Ranked: over-the-line → escalating (soonest ETA) → no forecast.")
+st.dataframe(
+    {
+        "patient": [r.pid for r in board],
+        "archetype": [r.archetype for r in board],
+        "status": [r.status for r in board],
+        "risk": [round(r.risk_now, 2) for r in board],
+        "time-to-escalation": [_eta_label(r) for r in board],
+        "flags": [_flags(r) for r in board],
+    },
+    width="stretch", hide_index=True,
+)
+
+# --- ECHO: similar past trajectories for a chosen patient (grounding, not a forecast) ----------
+_header("ECHO — similar cases", "echo")
+focus_pid = st.selectbox("Focus patient", [r.pid for r in at_risk] or [r.pid for r in rows],
+                         format_func=lambda i: f"patient {i}")
+neighbours = echo_neighbours(cctx, focus_pid, now_idx)
+st.caption("Nearest synthetic trajectories by shape · "
+           + " · ".join(f"patient {n.pid} ({n.outcome})" for n in neighbours))
+st.plotly_chart(echo_figure(cctx, focus_pid, neighbours, now_idx), width="stretch")

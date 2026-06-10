@@ -13,4 +13,4 @@ def test_seed_is_42() -> None:
 
 
 def test_vitals_is_sig1_tight_set() -> None:
-    assert len(VITALS) == 5  # SIG-1: RR, SpO2, HR, temp + one labs proxy
+    assert len(VITALS) == 4  # SIG-1: RR, SpO2, HR, temp (labs proxy dropped as inert at milestone)

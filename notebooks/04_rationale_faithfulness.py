@@ -127,6 +127,9 @@ figB
 
 # %%
 print(r0.headline)
-for line in r0.expand:
+for name, val in r0.top_k:  # the additive risk contributors
+    print(f"  • {name}: {val:+.2f}")
+for line in r0.context:  # the AEGIS 'why early' context (σ-clamped)
     print(f"  • {line}")
-print(f"  terms named (all in vocabulary): {set(r0.terms) <= set(VOCABULARY)}")
+print(f"  regime={r0.regime} additive={r0.additive} | terms in vocabulary: "
+      f"{set(r0.terms) <= set(VOCABULARY)}")

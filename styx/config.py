@@ -46,8 +46,10 @@ AEGIS_SUSTAIN: int = 3  # consecutive samples (15 sim-min) above K before AEGIS 
 #: contributor (independent risk ablation) on at least this fraction of the held-out re-scores.
 G4_FAITHFULNESS_FLOOR: float = 0.90
 
-#: SIG-1 — the tight vital set that carries the decoupling (RR, SpO₂, HR, temp + one labs proxy).
-VITALS: tuple[str, ...] = ("RR", "SpO2", "HR", "temp", "labs_proxy")
+#: SIG-1 — the tight vital set that carries the decoupling (RR, SpO₂, HR, temp). The labs proxy was
+#: dropped at the MVP milestone: it had zero embedding loading and was never the worst-vital
+#: exceedance (S3), so it was inert dead-weight — confirmed by re-running G1/G2/G3 after the drop.
+VITALS: tuple[str, ...] = ("RR", "SpO2", "HR", "temp")
 
 #: F1 state-space axes — the named physiological constructs each 2-D latent axis must track.
 STATE_AXES: tuple[str, str] = ("oxygenation", "effort")
@@ -81,7 +83,6 @@ NORMAL_RANGES: dict[str, VitalRange] = {
     "SpO2": VitalRange(94.0, 100.0),  # %
     "HR": VitalRange(60.0, 100.0),  # bpm
     "temp": VitalRange(36.0, 37.8),  # °C
-    "labs_proxy": VitalRange(0.0, 1.0),  # unit-scaled inflammation proxy
 }
 
 

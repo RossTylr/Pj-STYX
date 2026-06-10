@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from styx.anticipation import cadence_indices, ghost_cone
+from styx.anticipation import FireTimes, cadence_indices, fire_times, ghost_cone
 from styx.config import RESCORE_CADENCE_MIN, THRESHOLDS
 from styx.forecast import ForecastCone, conformal_band, project
 from styx.rationale import Rationale, explain
@@ -37,6 +37,9 @@ class PatientContext:
     ghost: ForecastCone | None
     aegis_idx: int | None
     indices: list[int]  # the re-score grid the clock scrubs over
+    fire: FireTimes  # AEGIS / forecast / threshold fire times — status lead + scrub ticks
+    default_idx: int  # the silent-window frame the clock lands on (the demo's money shot)
+    ticks: dict[str, int | None]  # re-score indices for the scrub ticks / jump buttons
     threshold: float = THRESHOLDS.risk_escalation
     cadence_min: int = RESCORE_CADENCE_MIN
 
@@ -52,6 +55,23 @@ class Frame:
     rationale: Rationale
     sentinel: float  # confidence in the current estimate ∈ [0, 1] (SENTINEL)
     sentinel_label: str
+    regime: str  # "silent" | "crossed" (from the rationale)
+    risk_verb: str  # plain status phrase for the metric row
+
+
+def _nearest_idx(t: np.ndarray, indices: list[int], target_min: float | None) -> int | None:
+    """The re-score index closest to a sim-minute target (None if the target never fired)."""
+    if target_min is None:
+        return None
+    return min(indices, key=lambda i: abs(float(t[i]) - target_min))
+
+
+def _default_idx(t: np.ndarray, indices: list[int], fire: FireTimes) -> int:
+    """The silent-window frame the clock lands on: nearest re-score to the forecast fire (the money
+    shot — risk rising, still pre-threshold), falling back to the AEGIS flag, then mid-stay."""
+    target = fire.forecast_min if fire.forecast_min is not None else (
+        fire.aegis_min if fire.aegis_min is not None else float(t[len(t) // 2]))
+    return min(indices, key=lambda i: abs(float(t[i]) - target))
 
 
 def build_context(
@@ -66,10 +86,16 @@ def build_context(
     calibration = [risk_series(q, emb, basins) for q in cohort.patients if q.pid != patient.pid]
     band = conformal_band(calibration, t)
     events = expand_history(patient)
+    fire = fire_times(cohort, patient, cadence_min)
+    ticks = {
+        "aegis": _nearest_idx(t, idx, fire.aegis_min),
+        "forecast": _nearest_idx(t, idx, fire.forecast_min),
+        "breach": _nearest_idx(t, idx, fire.threshold_min),
+    }
     return PatientContext(
         cohort, patient, emb, basins, risk, band, events,
         events_on_path(patient, emb, events), ghost_cone(cohort, patient, cadence_min=cadence_min),
-        aegis_fire_index(patient, emb, idx), idx,
+        aegis_fire_index(patient, emb, idx), idx, fire, _default_idx(t, idx, fire), ticks,
     )
 
 
@@ -89,7 +115,9 @@ def patient_frame(ctx: PatientContext, now_idx: int) -> Frame:
     t = ctx.patient.t_min
     cone = project(ctx.risk, t, now_idx, ctx.band)
     conf, label = _sentinel(cone)
+    rationale = explain(ctx.patient, ctx.emb, ctx.basins, now_idx)
+    verb = "threshold crossed" if rationale.regime == "crossed" else "rising, pre-threshold"
     return Frame(
-        now_idx, float(t[now_idx]), float(ctx.risk[now_idx]), cone,
-        explain(ctx.patient, ctx.emb, ctx.basins, now_idx), conf, label,
+        now_idx, float(t[now_idx]), float(ctx.risk[now_idx]), cone, rationale, conf, label,
+        rationale.regime, verb,
     )

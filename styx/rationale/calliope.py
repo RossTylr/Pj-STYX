@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from styx.config import FORECAST_WINDOW, NORMAL_RANGES, VITALS
+from styx.config import FORECAST_WINDOW, NORMAL_RANGES, THRESHOLDS, VITALS
 from styx.risk import (
     aegis_axis_departures,
     decoupling_drop,
@@ -38,15 +38,25 @@ _STABLE_EPS = 1e-3  # below this, no term is "driving" risk → the stable templ
 _SLOPE_EPS = 1e-4
 _DEPART_FLOOR = 1.0  # σ — name the departure direction once it is a real baseline departure
 _DECOUP_FLOOR = 0.05  # coherence-drop units — name decoupling once it is real
+_SIGMA_CLAMP = 8.0  # above this, render the departure in words — "26σ" reads as a pegged meter
+_ADDITIVE_TOL = 1e-9  # contributions reconstruct risk to here (false once the proximity clips)
 
 
 @dataclass(frozen=True)
 class Rationale:
-    """A filled CALLIOPE rationale at one re-score index."""
+    """A filled CALLIOPE rationale at one re-score index — regime-aware (silent vs threshold-crossed).
 
-    headline: str  # one tight clinician-facing line (top-1 risk driver)
-    expand: tuple[str, ...]  # optional detail lines (risk ranking + AEGIS context)
+    Post-breach the proximity overshoots the attractor and clips, so the additive contributor split
+    no longer sums to the displayed risk: ``additive`` goes False and the renderer must suppress the
+    contributor panel (showing it would display 1.30 against a 1.00 risk). The headline verb tracks
+    the regime so it never says "approaching" a mode the patient already crashed through.
+    """
+
+    headline: str  # one tight clinician-facing line (regime-aware)
+    regime: str  # "silent" (pre-threshold) | "crossed" (risk ≥ escalation threshold)
+    additive: bool  # top_k sums to the displayed risk → safe to render as contributions
     top_k: tuple[tuple[str, float], ...]  # ranked risk terms — the G4 faithfulness target
+    context: tuple[str, ...]  # AEGIS context lines (σ-clamped) — regime-independent
     terms: tuple[str, ...]  # every vocabulary term named (closed-set guarantee)
 
 
@@ -78,6 +88,25 @@ def _headline_phrase(term: str, patient: Patient, emb: Embedding, basins: Basins
     return f"{worst} {side} range — absolute breach"
 
 
+def _context_lines(patient: Patient, emb: Embedding, idx: int) -> tuple[list[str], list[str]]:
+    """The AEGIS 'why this is early' lines (σ-clamped), with the vocab terms they name."""
+    lines: list[str] = []
+    named: list[str] = []
+    dep = aegis_axis_departures(patient, emb)
+    dom_axis = max(dep, key=lambda a: float(dep[a][idx]))
+    dep_mag = float(dep[dom_axis][idx])
+    if dep_mag >= _DEPART_FLOOR:
+        sigma = ("far beyond personal baseline" if dep_mag > _SIGMA_CLAMP
+                 else f"{dep_mag:.1f}σ from personal baseline")
+        lines.append(f"{DEPARTURE}: {dom_axis} {sigma}")
+        named.append(DEPARTURE)
+    dec_mag = float(decoupling_drop(patient)[idx])
+    if dec_mag >= _DECOUP_FLOOR:
+        lines.append(f"{DECOUPLING}: RR–SpO₂ coherence down {dec_mag:.2f}")
+        named.append(DECOUPLING)
+    return lines, named
+
+
 def explain(patient: Patient, emb: Embedding, basins: Basins, idx: int) -> Rationale:
     """Build the CALLIOPE rationale at re-score index ``idx`` (strict template; vocab-closed)."""
     pc = proximity_components(patient, emb, basins)
@@ -90,26 +119,21 @@ def explain(patient: Patient, emb: Embedding, basins: Basins, idx: int) -> Ratio
         (EXCEEDANCE, 0.5 * float(ev[worst][idx])),
     ]
     top_k = tuple(sorted(risk_terms, key=lambda t: (-t[1], _ORDER[t[0]])))
+    regime = "crossed" if risk >= THRESHOLDS.risk_escalation else "silent"
+    additive = abs(sum(v for _, v in top_k) - risk) < _ADDITIVE_TOL
 
     lead, lead_val = top_k[0]
     if lead_val < _STABLE_EPS:
         headline = f"Patient {patient.pid}: stable — risk {risk:.2f}, no dominant driver"
-        return Rationale(headline, (), top_k, ())
+        return Rationale(headline, regime, additive, top_k, (), ())
 
-    headline = f"Patient {patient.pid}: {_headline_phrase(lead, patient, emb, basins, idx)} " \
-               f"(risk {risk:.2f})"
-    expand = [f"{name}: {val:+.2f}" for name, val in top_k]
-    named: list[str] = [name for name, _ in top_k]
+    mode = _mode_at(patient, emb, basins, idx)
+    if regime == "crossed":
+        headline = f"Patient {patient.pid}: threshold crossed — in the {mode} mode (risk {risk:.2f})"
+    else:
+        headline = f"Patient {patient.pid}: {_headline_phrase(lead, patient, emb, basins, idx)} " \
+                   f"(risk {risk:.2f})"
 
-    dep = aegis_axis_departures(patient, emb)
-    dom_axis = max(dep, key=lambda a: float(dep[a][idx]))
-    dep_mag = float(dep[dom_axis][idx])
-    if dep_mag >= _DEPART_FLOOR:
-        expand.append(f"{DEPARTURE}: {dom_axis} {dep_mag:.1f}σ from personal baseline")
-        named.append(DEPARTURE)
-    dec_mag = float(decoupling_drop(patient)[idx])
-    if dec_mag >= _DECOUP_FLOOR:
-        expand.append(f"{DECOUPLING}: RR–SpO₂ coherence down {dec_mag:.2f}")
-        named.append(DECOUPLING)
-
-    return Rationale(headline, tuple(expand), top_k, tuple(named))
+    context, ctx_named = _context_lines(patient, emb, idx)
+    named = [name for name, _ in top_k] + ctx_named
+    return Rationale(headline, regime, additive, top_k, tuple(context), tuple(named))

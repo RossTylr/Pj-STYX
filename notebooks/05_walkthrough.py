@@ -98,5 +98,8 @@ figD
 
 # %%
 print(frame.rationale.headline)
-for line in frame.rationale.expand:
+if frame.rationale.additive:  # contributors only shown when they sum to the risk (pre-overshoot)
+    for name, val in frame.rationale.top_k:
+        print(f"  • {name}: {val:+.2f}")
+for line in frame.rationale.context:
     print(f"  • {line}")

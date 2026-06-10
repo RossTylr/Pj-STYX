@@ -3,7 +3,7 @@ attribution: it names only the closed vocabulary, its named top-1 risk driver ma
 deteriorating physiology, and the decomposition faithfully reconstructs the risk it explains.
 Evidence comes from styx.rationale (LYR-1: imported, never reimplemented)."""
 
-from styx.config import G4_FAITHFULNESS_FLOOR
+from styx.config import G4_FAITHFULNESS_FLOOR, THRESHOLDS
 from styx.rationale import VOCABULARY, explain
 from styx.rationale.calliope import EFFORT_PROX, OXY_PROX
 from styx.risk import risk_series
@@ -87,6 +87,22 @@ def test_headline_is_template_only() -> None:
         for _, sl in replay_windows(p, cohort.rescore_cadence_min):
             r = explain(p, emb, basins, sl.stop - 1)
             assert "\n" not in r.headline and r.headline.startswith(f"Patient {p.pid}:")
-            # every expand line is a "<vocab term>: ..." pair — no free text
-            for line in r.expand:
-                assert line.split(":")[0] in VOCABULARY, f"non-template expand line: {line!r}"
+            # every context line is a "<vocab term>: ..." pair — no free text
+            for line in r.context:
+                assert line.split(":")[0] in VOCABULARY, f"non-template context line: {line!r}"
+
+
+def test_post_breach_regime() -> None:
+    # Post-breach the rationale must switch regime: no "approaching", no non-summing contributor
+    # line, and the σ clamps to words — the rendering bug the 1425-min capture exposed.
+    cohort, emb, basins = _fitted()
+    p = cohort.silent_case()
+    risk = risk_series(p, emb, basins)
+    assert risk[-1] >= THRESHOLDS.risk_escalation  # the stay ends deep in the crisis
+    r = explain(p, emb, basins, p.t_min.size - 1)  # the final frame — proximity has overshot
+    assert r.regime == "crossed"
+    assert r.additive is False  # proximity overshoots the attractor → contributions no longer sum
+    assert "threshold crossed" in r.headline and "approaching" not in r.headline
+    assert set(r.terms) <= set(VOCABULARY)
+    assert any("far beyond personal baseline" in line for line in r.context)  # σ clamped to words
+    assert not any("σ" in line for line in r.context)  # no pegged numeric σ rendered

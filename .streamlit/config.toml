@@ -1,0 +1,4 @@
+# STYX demo config. Hide the Deploy button — it contradicts the "not a live deployment" banner
+# (Hard Rule 7: the demo is replay-of-synthetic; never imply a live or streaming deployment).
+[client]
+toolbarMode = "minimal"

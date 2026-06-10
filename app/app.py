@@ -18,5 +18,6 @@ st.warning(
 
 st.write(f"Vital set (SIG-1): {', '.join(VITALS)}")
 st.write(f"Re-score cadence: every {RESCORE_CADENCE_MIN} min (sim-time)")
-st.info("Open **Patient** in the sidebar for the integrated single-patient view (S4). "
-        "The **Ward** board lands in S5.")
+st.info("Open the **Ward** board in the sidebar for cohort triage (rank by time-to-escalation, the "
+        "silent-but-rising watchlist, ECHO look-alikes), then click a patient to drill into the "
+        "integrated single-patient **Patient** view at the same moment.")
