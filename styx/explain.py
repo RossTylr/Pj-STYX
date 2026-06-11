@@ -112,12 +112,15 @@ CARER_FOOTER: str = "A synthetic replay, shown for demonstration — not real pa
 
 EXPLAINERS: dict[str, Explainer] = {
     "trajectory": Explainer(
-        what="Recent vitals as one moving point on a 2-axis clinical map "
-             "(left↔right oxygenation, up↕down breathing effort).",
-        how="The vitals are combined into the two axes; the shaded zones are the stable basin and "
-            "the crisis attractor, learned from the cohort.",
-        why="It shows direction of travel — a patient drifting toward crisis while every vital "
-            "still reads normal. (Constructed axes; synthetic replay.)",
+        what="The patient's path through the clinical state space — SpO₂ (worse left) against "
+             "breathing rate (worse up), with the cascade events numbered in time order.",
+        how="The warm shading *is* the NEWS2 sub-score for those two vitals (no new maths); the "
+            "path is the smoothed trajectory, and each marker sits where a cascade event fired — "
+            "the first is the breathing–oxygen coupling breaking down, the mechanism, not an alarm.",
+        why="It shows the direction of travel a threshold misses — the patient drifting into "
+            "silent hypoxia while breathing rate barely moves. The lead stays the early-warning-"
+            "vs-NEWS2 gap (≈5 h); it claims no extra accuracy. (Synthetic replay; parked in "
+            "hindsight at the breach.)",
     ),
     "waterline": Explainer(
         what="A 0–1 risk over time, with the escalation line.",

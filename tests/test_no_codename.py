@@ -100,8 +100,9 @@ def _figure_builders() -> dict:
     from styx.viz.hazard import hazard_figure
     from styx.viz.theograph import detail_strip_figure, ribbon_figure
     from styx.viz.timeline import timeline_figure
-    from styx.viz.trajectory import trajectory_figure
+    from styx.viz.trajectory import clinical_trajectory_figure, trajectory_figure
     from styx.viz.waterline import waterline_figure
+    from styx.readouts import news2_crossing
 
     cohort = build_cohort(seed=42)
     patient = cohort.silent_case()
@@ -112,9 +113,16 @@ def _figure_builders() -> dict:
     now_idx = cctx.default_idx
     neighbours = echo_neighbours(cctx, focus_pid, now_idx)
     d = decoupling_onset(patient)  # patient is the silent case → onset always present
+    echo_ends = [(float(cohort.patients[n.pid].vitals["SpO2"][-1]),
+                  float(cohort.patients[n.pid].vitals["RR"][-1]))
+                 for n in neighbours if n.outcome == "escalated"]
     return {
         trajectory_figure: lambda: trajectory_figure(
             patient, ctx.emb, ctx.basins, events=ctx.on_path),
+        clinical_trajectory_figure: lambda: clinical_trajectory_figure(
+            patient, decoupling_min=d.onset_min, aegis_min=ctx.fire.aegis_min,
+            escalation_min=ctx.fire.threshold_min, news2_min=news2_crossing(patient),
+            echo_endpoints=echo_ends),
         timeline_figure: lambda: timeline_figure(episode_timeline(ctx)),
         carer_timeline_figure: lambda: carer_timeline_figure(episode_timeline(ctx)),
         coherence_figure: lambda: coherence_figure(

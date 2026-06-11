@@ -17,10 +17,11 @@ from styx.explain import (
     SCORE_CAPTION,
 )
 from styx.cohort import build_cohort_context
+from styx.cohort.echo import echo_neighbours
 from styx.frame import build_context, patient_frame
 from styx.reach.decoupling import decoupling_onset
 from styx.reach.history import stratify
-from styx.readouts import footer_text, sim_clock, styx_index
+from styx.readouts import footer_text, news2_crossing, sim_clock, styx_index
 from styx.synth import Archetype, build_cohort
 from styx.timeline import episode_timeline
 from styx.viz.coherence import coherence_figure
@@ -28,7 +29,7 @@ from styx.viz.cone import cone_figure
 from styx.viz.hazard import hazard_figure
 from styx.viz.theograph import detail_strip_figure, ribbon_figure
 from styx.viz.timeline import timeline_figure
-from styx.viz.trajectory import trajectory_figure
+from styx.viz.trajectory import clinical_trajectory_figure  # trajectory_figure retained as future model view
 from styx.viz.waterline import waterline_figure
 
 st.set_page_config(page_title="STYX — patient", layout="wide")
@@ -48,6 +49,20 @@ def _context(pid: int):
 def _hazard():
     # Cohort-wide history-as-prior stratification — same for every patient, so fit once (no pid arg).
     return stratify(build_cohort_context(build_cohort(seed=42)))
+
+
+@st.cache_resource
+def _echo_endpoints(pid: int) -> list[tuple[float, float]]:
+    # Past-deterioration cluster for the clinical hero: the (SpO₂, RR) endpoints of the escalated
+    # look-alikes (read-only retrieval; the figure just plots the points).
+    cohort = build_cohort(seed=42)
+    cctx = build_cohort_context(cohort)
+    _, c = _context(pid)
+    return [
+        (float(cohort.patients[n.pid].vitals["SpO2"][-1]),
+         float(cohort.patients[n.pid].vitals["RR"][-1]))
+        for n in echo_neighbours(cctx, pid, c.default_idx) if n.outcome == "escalated"
+    ]
 
 
 # --- sidebar controls -------------------------------------------------------------------------
@@ -118,10 +133,22 @@ s3.metric(f"{DISPLAY_NAMES['aegis']} lead", f"{lead / 60:.1f} h" if lead else "�
           "before threshold", delta_color="off")
 st.caption(OBS_AGE_TEMPLATE.format(clock=sim_clock(frame.now_min)))
 
-# --- hero: state-space trajectory -------------------------------------------------------------
+# --- hero: clinical state-space trajectory (SpO₂ × RR) ----------------------------------------
+# Static retrospective view (6d.1). trajectory_figure (constructed/model axes) is retained as the
+# future model view — imported, not rendered. Interactive scrub of this hero follows in 6d.2.
 _header(DISPLAY_NAMES["trajectory"], "trajectory")
-st.plotly_chart(trajectory_figure(patient, ctx.emb, ctx.basins, events=ctx.on_path),
-                width="stretch")
+try:
+    _decoupling_min = decoupling_onset(patient).onset_min
+except ValueError:
+    _decoupling_min = None  # not every escalator carries a decoupling onset
+st.plotly_chart(
+    clinical_trajectory_figure(
+        patient, decoupling_min=_decoupling_min, aegis_min=ctx.fire.aegis_min,
+        escalation_min=ctx.fire.threshold_min, news2_min=news2_crossing(patient),
+        echo_endpoints=_echo_endpoints(pid),
+    ),
+    width="stretch",
+)
 
 # --- episode timeline (build-once strip; static, independent of the scrub) --------------------
 _header("Episode timeline", "timeline")

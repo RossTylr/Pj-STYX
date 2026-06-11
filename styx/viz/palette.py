@@ -33,6 +33,13 @@ RISK_FILL = "rgba(0,114,178,0.12)"
 CONE_FILL = "rgba(0,114,178,0.18)"
 ZONE_OPACITY = 0.18
 
+# --- Warm risk ramp (clinical trajectory background) — white (0 pts) → deep terracotta (6 pts).
+# Indexed by the NEWS2 Scale-1 sub-score for the two plotted vitals (SpO₂ + RR), so the shading
+# *is* the comparator's own points field, not decoration. Single warm hue (no red–green pair). ---
+WARM_RAMP: tuple[str, ...] = (
+    "#FFFFFF", "#FBEFE7", "#F7D9C6", "#F1BE9F", "#E79C74", "#D9764A", "#C4532D",
+)
+
 # --- Theograph care-event channels (fixed order; one distinguishable swatch each) --------------
 CHANNELS: dict[str, str] = {
     "primary_care": BLUISH_GREEN,
