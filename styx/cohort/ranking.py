@@ -18,6 +18,7 @@ import numpy as np
 from styx.anticipation import FireTimes, cadence_indices, fire_times
 from styx.config import RESCORE_CADENCE_MIN, THRESHOLDS, VITALS
 from styx.forecast import ForecastCone, conformal_band, project
+from styx.readouts import eta_ordinal
 from styx.risk import aegis_fire_index, exceedance_per_vital, risk_series
 from styx.state import fit_embedding, learn_basins
 from styx.state.embedding import Basins, Embedding
@@ -122,6 +123,28 @@ def eta_band(
     eta_soonest = soonest - now_min
     eta_central = central - now_min if central is not None else None
     return "escalating", eta_soonest, eta_central, eta_central is not None
+
+
+#: (6e) Watchlist urgency tiers, most-urgent first — the order the ward page renders the groups.
+#: Keys only: the page shows ``styx.explain.WATCH_TIER_LABELS[tier]``, never these raw.
+WATCH_TIERS: tuple[str, ...] = ("review_now", "this_hour", "watch")
+
+
+def watch_tier(row: WardRow) -> str:
+    """Urgency tier for a watchlist row (6e) — a pure classification over existing signals.
+
+    No new score: it reads the status trichotomy, the early-warning flag and the ordinal ETA band
+    (``styx.readouts.eta_ordinal`` — the same bands the board prints), so the pipeline digest is
+    untouched by construction. The ``escalated`` clause is unsatisfiable *within* the watchlist
+    (membership requires risk below the line) but is kept for frame-generality — the function
+    answers honestly for any row at any clock.
+    """
+    band = eta_ordinal(row.eta_soonest_min)
+    if row.status == "escalated" or band == "lt30":
+        return "review_now"  # over the line, or escalation projected within 30 min
+    if row.silent_but_rising and band == "30_60":
+        return "this_hour"  # early-warning fired and escalation projected within the hour
+    return "watch"
 
 
 def ward_frame(cctx: CohortContext, now_idx: int) -> list[WardRow]:

@@ -8,9 +8,17 @@ patient page scrubs (shared ``scrub_pos``), so a click drills straight through a
 
 import streamlit as st
 
-from styx.cohort import build_cohort_context, ward_frame
+from styx.cohort import WATCH_TIERS, build_cohort_context, ward_frame, watch_tier
 from styx.cohort.echo import echo_neighbours
-from styx.explain import ARCHETYPE_PATTERNS, DISPLAY_NAMES, ETA_BANDS, EXPLAINERS, OBS_AGE_TEMPLATE
+from styx.explain import (
+    ARCHETYPE_PATTERNS,
+    DISPLAY_NAMES,
+    ETA_BANDS,
+    EXPLAINERS,
+    OBS_AGE_TEMPLATE,
+    WATCH_TIER_CRITERIA,
+    WATCH_TIER_LABELS,
+)
 from styx.readouts import eta_ordinal, footer_text, sim_clock, styx_index
 from styx.synth import build_cohort
 from styx.viz import palette as pal
@@ -119,17 +127,27 @@ st.caption(f"Cohort {OBS_AGE_TEMPLATE.format(clock=sim_clock(cctx.t_min[now_idx]
            f"{len(rows)} patients")
 
 # --- watchlist: the silent-but-rising patients a threshold board would show green --------------
+# (6e) Grouped into urgency tiers so the nurse triages a short list, not a wall. Rows keep the
+# ward_frame order (already soonest-first), so tier groups simply partition the existing sort.
 watch = [r for r in rows if r.silent_but_rising]
+tiers = {t: [r for r in watch if watch_tier(r) == t] for t in WATCH_TIERS}
 _header(f"Watchlist — silent but rising ({len(watch)})", "watchlist")
+st.caption(" · ".join(f"{WATCH_TIER_LABELS[t]}: {len(tiers[t])}" for t in WATCH_TIERS))
 if not watch:
     st.caption("No silent risers at this frame.")
-for r in watch[: (TOP_N if focus_mode else len(watch))]:
-    c1, c2, c3, c4 = st.columns([2, 3, 4, 3])
-    c1.markdown(f"**patient {r.pid}**")
-    c2.markdown(f"Pattern: {ARCHETYPE_PATTERNS[r.archetype]}")
-    c3.markdown(f"STYX {styx_index(r.risk_now)} · ETA {_eta_label(r)}  \n{_flag_badges(r)}")
-    with c4:
-        _drill(r)
+budget = TOP_N if focus_mode else len(watch)  # focus keeps the most urgent rows overall
+for t in WATCH_TIERS:
+    st.markdown(f"**{WATCH_TIER_LABELS[t]} ({len(tiers[t])})**")
+    st.caption(WATCH_TIER_CRITERIA[t])
+    shown = tiers[t][:max(0, budget)]
+    budget -= len(shown)
+    for r in shown:
+        c1, c2, c3, c4 = st.columns([2, 3, 4, 3])
+        c1.markdown(f"**patient {r.pid}**")
+        c2.markdown(f"Pattern: {ARCHETYPE_PATTERNS[r.archetype]}")
+        c3.markdown(f"STYX {styx_index(r.risk_now)} · ETA {_eta_label(r)}  \n{_flag_badges(r)}")
+        with c4:
+            _drill(r)
 
 # --- the full triage board (ranked by soonest-to-escalate) ------------------------------------
 at_risk = [r for r in rows if r.status in ("escalated", "escalating")]

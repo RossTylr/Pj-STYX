@@ -187,8 +187,11 @@ EXPLAINERS: dict[str, Explainer] = {
     "watchlist": Explainer(
         what="Patients deteriorating within their normal range — the early flag has fired, no "
              "threshold crossed.",
-        how="Departure from personal baseline with the risk still below the escalation line.",
-        why="Exactly the patients a vitals-threshold board misses. (Synthetic replay.)",
+        how="Departure from personal baseline with the risk still below the escalation line, "
+            "split into three urgency tiers — review now / this hour / watch — read off the "
+            "early-warning flag and the projected escalation window (no new score).",
+        why="Exactly the patients a vitals-threshold board misses — tiered so the soonest are "
+            "reviewed first instead of scanned in a flat list. (Synthetic replay.)",
     ),
     "echo": Explainer(
         what="A few past patients whose course most resembles this one, and how they turned out.",
@@ -283,6 +286,25 @@ ETA_BANDS: dict[str, str] = {
     "1_2h": "1–2 h",
     "gt2h": "> 2 h",
     "unclear": "unclear",
+}
+
+#: (6e) Watchlist urgency-tier labels — keyed by ``styx.cohort.watch_tier`` output. The page
+#: renders these, never the raw keys.
+WATCH_TIER_LABELS: dict[str, str] = {
+    "review_now": "Review now",
+    "this_hour": "This hour",
+    "watch": "Watch",
+}
+
+#: (6e) The tier criteria, shown under each tier heading so the triage split is never a black box —
+#: same keys. Plain register: the early-warning flag by its plain name, the ETA as a window.
+#: Review-now describes only the state the watchlist can contain (projected <30 min): crossed
+#: patients live on the triage board, never here, so the caption omits ``watch_tier``'s general
+#: escalated clause rather than send a nurse looking for patients this list excludes by definition.
+WATCH_TIER_CRITERIA: dict[str, str] = {
+    "review_now": "escalation projected within 30 min",
+    "this_hour": "early-warning flag fired and escalation projected within the hour",
+    "watch": "early-warning flag fired; no escalation projected within the hour",
 }
 
 #: (6c) Obs-age stamp — the honest provenance of a score (which observation it was scored on).
