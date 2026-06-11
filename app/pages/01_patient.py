@@ -134,8 +134,9 @@ s3.metric(f"{DISPLAY_NAMES['aegis']} lead", f"{lead / 60:.1f} h" if lead else "�
 st.caption(OBS_AGE_TEMPLATE.format(clock=sim_clock(frame.now_min)))
 
 # --- hero: clinical state-space trajectory (SpO₂ × RR) ----------------------------------------
-# Static retrospective view (6d.1). trajectory_figure (constructed/model axes) is retained as the
-# future model view — imported, not rendered. Interactive scrub of this hero follows in 6d.2.
+# Scrub-driven (6d.2): the replay clock moves the "now" cursor and reveals the cascade markers in
+# fire order; hover carries the per-marker detail. trajectory_figure (constructed/model axes) is
+# retained as the future model view — imported, not rendered.
 _header(DISPLAY_NAMES["trajectory"], "trajectory")
 try:
     _decoupling_min = decoupling_onset(patient).onset_min
@@ -145,7 +146,7 @@ st.plotly_chart(
     clinical_trajectory_figure(
         patient, decoupling_min=_decoupling_min, aegis_min=ctx.fire.aegis_min,
         escalation_min=ctx.fire.threshold_min, news2_min=news2_crossing(patient),
-        echo_endpoints=_echo_endpoints(pid),
+        echo_endpoints=_echo_endpoints(pid), now_idx=now_idx,
     ),
     width="stretch",
 )

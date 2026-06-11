@@ -22,6 +22,7 @@ from styx.explain import (
     SCOPE_LINE,
     SCORE_CAPTION,
     TIMELINE_LABELS,
+    TRAJECTORY_MARKERS,
 )
 from styx.synth import Archetype
 from styx.timeline import _TECH_LABELS
@@ -84,6 +85,7 @@ def test_no_codename_in_copy() -> None:
         + list(KM_STRATUM_LABELS.values())
         + list(CARER_NAMES.values())  # (R4) HERMES patient-safe register — plain, no codenames
         + list(COHERENCE_LABELS.values())  # (R3a.2) CADUCEUS coherence-panel labels — plain copy
+        + list(TRAJECTORY_MARKERS.values())  # (6d) hero cascade-marker hover copy — plain copy
     )
     for text in values:
         hit = [c for c in _CODENAMES if re.search(rf"\b{c}\b", text, re.IGNORECASE)]

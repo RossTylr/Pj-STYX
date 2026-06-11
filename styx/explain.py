@@ -243,6 +243,17 @@ COHERENCE_LABELS: dict[str, str] = {
     "yaxis": "RR–SpO₂ coherence",
 }
 
+#: (6d) Clinical-trajectory cascade-marker labels — the hover copy on the hero's four markers
+#: (``styx.viz.trajectory.clinical_trajectory_figure``), in fire order. ``decoupling`` reads as the
+#: *mechanism's onset* (the coupling breaking down), never an alert; the lead framing stays
+#: early-warning-vs-NEWS2. Honesty-/register-linted as copy alongside the cards.
+TRAJECTORY_MARKERS: dict[str, str] = {
+    "decoupling": "coupling breaks down here",
+    "early_warning": "early warning",
+    "escalation": "escalation crossing",
+    "news2": "NEWS2 fires",
+}
+
 #: (R4b) HERMES carer-facing timeline labels — the lay analogue of TIMELINE_LABELS, but *descriptive*
 #: and past/now-framed, never predictive. The carer strip (``styx.viz.carer.carer_timeline_figure``)
 #: draws only what has already happened — the span of monitoring, the "now" edge, and the early-warning
