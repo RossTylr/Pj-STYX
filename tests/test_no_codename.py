@@ -91,7 +91,10 @@ def _figure_builders() -> dict:
     """
     from styx.cohort import build_cohort_context
     from styx.cohort.echo import echo_neighbours
+    from styx.reach.decoupling import decoupling_onset
     from styx.reach.history import stratify
+    from styx.viz.carer import carer_timeline_figure
+    from styx.viz.coherence import coherence_figure
     from styx.viz.cone import cone_figure
     from styx.viz.echo import echo_figure
     from styx.viz.hazard import hazard_figure
@@ -108,10 +111,14 @@ def _figure_builders() -> dict:
     focus_pid = cctx.cohort.silent_case().pid
     now_idx = cctx.default_idx
     neighbours = echo_neighbours(cctx, focus_pid, now_idx)
+    d = decoupling_onset(patient)  # patient is the silent case → onset always present
     return {
         trajectory_figure: lambda: trajectory_figure(
             patient, ctx.emb, ctx.basins, events=ctx.on_path),
         timeline_figure: lambda: timeline_figure(episode_timeline(ctx)),
+        carer_timeline_figure: lambda: carer_timeline_figure(episode_timeline(ctx)),
+        coherence_figure: lambda: coherence_figure(
+            patient.t_min, d.coherence, d.onset_min, aegis_min=ctx.fire.aegis_min),
         waterline_figure: lambda: waterline_figure(
             patient.t_min, ctx.risk, ctx.threshold, aegis_idx=ctx.aegis_idx),
         cone_figure: lambda: cone_figure(

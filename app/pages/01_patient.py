@@ -18,10 +18,12 @@ from styx.explain import (
 )
 from styx.cohort import build_cohort_context
 from styx.frame import build_context, patient_frame
+from styx.reach.decoupling import decoupling_onset
 from styx.reach.history import stratify
 from styx.readouts import footer_text, sim_clock, styx_index
 from styx.synth import Archetype, build_cohort
 from styx.timeline import episode_timeline
+from styx.viz.coherence import coherence_figure
 from styx.viz.cone import cone_figure
 from styx.viz.hazard import hazard_figure
 from styx.viz.theograph import detail_strip_figure, ribbon_figure
@@ -139,6 +141,21 @@ st.plotly_chart(hazard_figure(hz, focus_density=float(sum(patient.theograph.valu
 st.caption(f"Hazard ratio {hz.hazard_ratio:.2f} per care event "
            f"(95% CI {hz.hr_ci[0]:.2f}–{hz.hr_ci[1]:.2f}); concordance {hz.c_index:.2f}; "
            f"log-rank p {hz.logrank_p:.3f}. Descriptive association, not predictive lift.")
+
+# --- CADUCEUS (R3a.2): the mechanism behind the silent window — additive, descriptive only --------
+# Guarded: the selector allows any escalator, but not all carry a decoupling onset.
+try:
+    d = decoupling_onset(patient)
+except ValueError:
+    d = None
+if d is not None:
+    _header(DISPLAY_NAMES["caduceus"], "caduceus")
+    st.plotly_chart(
+        coherence_figure(patient.t_min, d.coherence, d.onset_min, aegis_min=ctx.fire.aegis_min),
+        width="stretch",
+    )
+    st.caption("Mechanism shown in hindsight — why the deterioration is silent; "
+               "the early warning is still where STYX alerts.")
 
 _header(DISPLAY_NAMES["cone"], "cone")
 show_ghost = st.checkbox("Hindsight forecast (forecast at early warning)", value=True)

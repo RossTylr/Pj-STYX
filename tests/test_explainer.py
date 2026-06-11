@@ -10,6 +10,8 @@ from pathlib import Path
 
 from styx.explain import (
     ARCHETYPE_PATTERNS,
+    CARER_NAMES,
+    COHERENCE_LABELS,
     COMPONENTS,
     CONDITION,
     DISPLAY_NAMES,
@@ -80,6 +82,8 @@ def test_no_codename_in_copy() -> None:
         + list(ARCHETYPE_PATTERNS.values())
         + list(ETA_BANDS.values())
         + list(KM_STRATUM_LABELS.values())
+        + list(CARER_NAMES.values())  # (R4) HERMES patient-safe register — plain, no codenames
+        + list(COHERENCE_LABELS.values())  # (R3a.2) CADUCEUS coherence-panel labels — plain copy
     )
     for text in values:
         hit = [c for c in _CODENAMES if re.search(rf"\b{c}\b", text, re.IGNORECASE)]

@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEWS2 — clinical explainer & STYX synthesis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F6F8; --card:#FFFFFF;
+    --ink:#13202B; --ink-2:#44525F; --ink-3:#71808D;
+    --line:#E1E6EB; --line-2:#EDF0F3;
+
+    --s0:#2E7D5B; --s0-bg:#E9F4EE;
+    --s1:#B58200; --s1-bg:#FAF0D6;
+    --s2:#D8661C; --s2-bg:#FAE6D4;
+    --s3:#C32232; --s3-bg:#F8DDE0;
+
+    --teal:#0B6E75; --teal-bg:#E1F0F1; --teal-ink:#063E43;
+
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+
+    --maxw:1080px;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{animation:none!important;transition:none!important}}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-size:16px;line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  a{color:var(--teal);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--teal) 35%,transparent)}
+  a:hover{border-bottom-color:var(--teal)}
+  :focus-visible{outline:2.5px solid var(--teal);outline-offset:2px;border-radius:4px}
+
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+  .mono{font-family:var(--mono)}
+
+  /* ---------- masthead ---------- */
+  .mast{padding:54px 0 28px;border-bottom:1px solid var(--line)}
+  .mast .prov{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+  .pill{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  h1.title{font-size:clamp(46px,9vw,92px);line-height:.92;letter-spacing:-.035em;font-weight:700;margin:0 0 14px}
+  h1.title .v{color:var(--teal)}
+  .lede{font-size:clamp(18px,2.5vw,22px);line-height:1.45;color:var(--ink-2);max-width:42ch;margin:0 0 26px;font-weight:400}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:7px}
+  .chip .dot{width:7px;height:7px;border-radius:2px;background:var(--ink-3)}
+
+  /* ---------- nav ---------- */
+  nav.toc{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:8px}
+  nav.toc .row{display:flex;gap:4px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
+  nav.toc .row::-webkit-scrollbar{display:none}
+  nav.toc a{font-family:var(--mono);font-size:12px;color:var(--ink-2);white-space:nowrap;padding:6px 12px;border-radius:8px;border-bottom:none}
+  nav.toc a:hover{background:var(--card);color:var(--ink)}
+
+  section{padding:46px 0;border-bottom:1px solid var(--line)}
+  .sec-head{margin-bottom:26px}
+  .sec-head .num{font-family:var(--mono);font-size:12px;color:var(--teal);letter-spacing:.1em}
+  h2{font-size:clamp(27px,4vw,38px);line-height:1.06;letter-spacing:-.02em;font-weight:700;margin:6px 0 0}
+  h3{font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0 0 10px}
+  p{margin:0 0 14px;max-width:68ch}
+  .muted{color:var(--ink-2)}
+
+  /* ---------- feynman paired blocks ---------- */
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:6px 0 8px}
+  @media(max-width:720px){.pair{grid-template-columns:1fr}}
+  .pane{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+  .pane .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:8px;display:inline-block}
+  .pane.plain .tag{color:var(--ink-3)}
+  .pane.tech{border-color:color-mix(in srgb,var(--teal) 28%,var(--line));background:linear-gradient(180deg,var(--teal-bg),var(--card) 60%)}
+  .pane.tech .tag{color:var(--teal-ink)}
+  .pane p:last-child{margin-bottom:0}
+
+  /* ---------- calculator ---------- */
+  .calc{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 1px 0 rgba(20,32,43,.03),0 18px 40px -28px rgba(20,32,43,.25)}
+  .calc-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--line-2);background:var(--paper)}
+  .calc-top .lhs{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;color:var(--ink-2)}
+  .presets{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;transition:background .15s,border-color .15s}
+  .btn:hover{background:var(--teal-bg);border-color:color-mix(in srgb,var(--teal) 35%,var(--line))}
+  .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media(max-width:760px){.calc-grid{grid-template-columns:1fr}}
+  .field{padding:15px 20px;border-bottom:1px solid var(--line-2);border-right:1px solid var(--line-2);display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px}
+  .calc-grid .field:nth-child(2n){border-right:none}
+  .field .lab{display:flex;flex-direction:column;gap:1px}
+  .field .lab .n{font-weight:600;font-size:14.5px}
+  .field .lab .u{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+  .control{display:flex;align-items:center;gap:8px}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--paper)}
+  .stepper button{width:30px;height:34px;border:none;background:transparent;font-size:17px;color:var(--ink-2);cursor:pointer;font-family:var(--mono);line-height:1}
+  .stepper button:hover{background:var(--teal-bg);color:var(--teal-ink)}
+  .stepper input{width:54px;height:34px;border:none;text-align:center;font-family:var(--mono);font-size:15px;background:transparent;color:var(--ink);font-weight:500}
+  .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{border:none;background:var(--paper);font-family:var(--mono);font-size:12px;padding:8px 11px;cursor:pointer;color:var(--ink-2)}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .scorebadge{min-width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:16px;border:1px solid transparent}
+  .sc0{color:var(--s0);background:var(--s0-bg);border-color:color-mix(in srgb,var(--s0) 22%,transparent)}
+  .sc1{color:var(--s1);background:var(--s1-bg);border-color:color-mix(in srgb,var(--s1) 22%,transparent)}
+  .sc2{color:var(--s2);background:var(--s2-bg);border-color:color-mix(in srgb,var(--s2) 25%,transparent)}
+  .sc3{color:#fff;background:var(--s3);border-color:var(--s3)}
+
+  .readout{padding:20px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+  @media(max-width:620px){.readout{grid-template-columns:1fr}}
+  .total{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;padding:16px 26px;min-width:130px;border:1px solid var(--line)}
+  .total .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .total .v{font-size:52px;font-weight:700;line-height:1;font-family:var(--mono);letter-spacing:-.02em}
+  .band{display:flex;flex-direction:column;gap:8px}
+  .band .name{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .band .name .tagband{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;padding:3px 9px;border-radius:999px;text-transform:uppercase}
+  .band .freq{font-family:var(--mono);font-size:13px;color:var(--ink-2)}
+  .band .resp{font-size:14.5px;color:var(--ink-2);line-height:1.5;max-width:60ch}
+  .redflag{font-family:var(--mono);font-size:12px;color:var(--s3);background:var(--s3-bg);border:1px solid color-mix(in srgb,var(--s3) 30%,transparent);border-radius:8px;padding:6px 10px;display:inline-block;margin-top:2px}
+  .total.b0,.tagband.b0{--c:var(--s0)} .total.b1,.tagband.b1{--c:var(--s1)} .total.b2,.tagband.b2{--c:var(--s2)} .total.b3,.tagband.b3{--c:var(--s3)}
+  .total.b0,.total.b1,.total.b2,.total.b3{border-color:color-mix(in srgb,var(--c) 40%,var(--line));background:color-mix(in srgb,var(--c) 8%,var(--card))}
+  .total .v{color:var(--c,var(--ink))}
+  .tagband.b0{color:var(--s0);background:var(--s0-bg)} .tagband.b1{color:var(--s1);background:var(--s1-bg)} .tagband.b2{color:var(--s2);background:var(--s2-bg)} .tagband.b3{color:#fff;background:var(--s3)}
+  .calc-note{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);padding:0 20px 16px;margin-top:-4px}
+
+  /* ---------- scoring tables ---------- */
+  .tbl-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+  .tbl-cap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+  .tbl-cap .ttl{font-weight:600;font-size:15px}
+  .tbl-cap .ttl .ico{font-family:var(--mono);color:var(--ink-3);font-size:12px;margin-right:8px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--line-2)}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:500;background:var(--paper)}
+  tbody tr:last-child td{border-bottom:none}
+  td.rng{font-family:var(--mono);color:var(--ink)}
+  .stab{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;font-family:var(--mono);font-weight:600;font-size:13px}
+  td .stab.sc0{color:var(--s0);background:var(--s0-bg)} td .stab.sc1{color:var(--s1);background:var(--s1-bg)} td .stab.sc2{color:var(--s2);background:var(--s2-bg)} td .stab.sc3{color:#fff;background:var(--s3)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+
+  .scale-toggle{display:flex;gap:8px;align-items:center}
+  .scale-toggle .seg button{font-size:11px;padding:6px 10px}
+
+  /* ---------- response ladder ---------- */
+  .ladder{display:flex;flex-direction:column;gap:10px}
+  .rung{display:grid;grid-template-columns:120px 1fr;gap:18px;background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:16px 18px}
+  @media(max-width:620px){.rung{grid-template-columns:1fr;gap:8px}}
+  .rung.r0{border-left-color:var(--s0)} .rung.r1{border-left-color:var(--s1)} .rung.r2{border-left-color:var(--s2)} .rung.r3{border-left-color:var(--s3)} .rung.rred{border-left-color:var(--s3);border-left-style:dashed}
+  .rung .score{font-family:var(--mono);font-weight:600}
+  .rung .score .big{font-size:24px;display:block;letter-spacing:-.02em}
+  .rung .score .risk{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .rung .detail .freq2{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--paper);border:1px solid var(--line-2);padding:2px 8px;border-radius:6px;display:inline-block;margin-bottom:7px}
+  .rung .detail p{margin:0;font-size:14px;color:var(--ink-2)}
+
+  /* ---------- generic cards / lists ---------- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .note{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+  .note h3{display:flex;align-items:center;gap:10px}
+  .note h3 .k{font-family:var(--mono);font-size:11px;color:#fff;background:var(--ink);border-radius:6px;padding:2px 7px;letter-spacing:.04em}
+  .note p:last-child{margin-bottom:0}
+  ul.clean{margin:0 0 14px;padding-left:0;list-style:none}
+  ul.clean li{position:relative;padding-left:24px;margin-bottom:9px;max-width:68ch;color:var(--ink-2)}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:10px;width:7px;height:7px;border:1.5px solid var(--teal);border-radius:2px}
+  ul.clean li b{color:var(--ink);font-weight:600}
+
+  /* ---------- per-parameter explainer cards ---------- */
+  .param{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+  .param-head{display:flex;align-items:baseline;gap:12px;padding:15px 20px 6px}
+  .param-head .pn{font-family:var(--mono);font-size:12px;color:var(--teal);letter-spacing:.08em}
+  .param-head h3{margin:0;font-size:18px}
+  .param-head .unit{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:auto;white-space:nowrap}
+  .param-body{display:grid;grid-template-columns:230px 1fr;gap:0}
+  @media(max-width:680px){.param-body{grid-template-columns:1fr}}
+  .param-table{border-right:1px solid var(--line-2)}
+  @media(max-width:680px){.param-table{border-right:none;border-bottom:1px solid var(--line-2)}}
+  .param-table table{font-size:13px}
+  .param-table thead th{background:var(--paper)}
+  .param-why{padding:14px 20px}
+  .param-why .lead{font-weight:600;font-size:14px;margin-bottom:6px;color:var(--ink)}
+  .param-why p{font-size:13.5px;line-height:1.56;color:var(--ink-2);margin:0 0 8px;max-width:64ch}
+  .param-why p:last-child{margin-bottom:0}
+  .param-why .ends{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .endtag{font-family:var(--mono);font-size:11px;border-radius:7px;padding:3px 9px;border:1px solid var(--line)}
+  .endtag.lo{color:var(--s3);background:var(--s3-bg);border-color:color-mix(in srgb,var(--s3) 22%,transparent)}
+  .endtag.hi{color:var(--s2);background:var(--s2-bg);border-color:color-mix(in srgb,var(--s2) 25%,transparent)}
+  .endtag b{font-weight:600}
+  .keyline{font-family:var(--mono);font-size:11.5px;color:var(--teal-ink);background:var(--teal-bg);border-left:3px solid var(--teal);padding:7px 11px;border-radius:0 7px 7px 0;margin-top:10px}
+
+  /* ---------- STYX context comparison ---------- */
+  .ctx-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .ctx-tab{font-family:var(--mono);font-size:12px;border:1px solid color-mix(in srgb,var(--teal) 25%,var(--line));background:var(--card);border-radius:10px;padding:9px 13px;cursor:pointer;color:var(--teal-ink);display:flex;align-items:center;gap:8px}
+  .ctx-tab .k{font-weight:600}
+  .ctx-tab[aria-pressed="true"]{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .ctx-panel{display:none}
+  .ctx-panel.on{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .matrix-wrap{background:var(--card);border:1px solid color-mix(in srgb,var(--teal) 18%,var(--line));border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+  .matrix-wrap table{font-size:13px}
+  .matrix-wrap thead th{background:var(--teal-bg);color:var(--teal-ink);font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+  .matrix-wrap th[scope=row]{font-weight:600;color:var(--ink);background:var(--paper);white-space:nowrap;font-size:12.5px}
+  .matrix-wrap td{color:var(--ink-2);vertical-align:top}
+  .matrix-wrap td b{color:var(--ink);font-weight:600}
+
+  .callout{background:var(--s3-bg);border:1px solid color-mix(in srgb,var(--s3) 28%,transparent);border-radius:var(--r);padding:18px 20px;margin:8px 0 16px}
+  .callout .tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--s3);margin-bottom:6px;display:block}
+  .callout p:last-child{margin-bottom:0}
+
+  /* ---------- STYX section ---------- */
+  .styx{background:linear-gradient(180deg,var(--teal-bg),var(--paper) 40%)}
+  .styx .badge-sec{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;color:var(--teal-ink);background:var(--card);border:1px solid color-mix(in srgb,var(--teal) 30%,var(--line));border-radius:999px;padding:5px 12px;margin-bottom:14px}
+  .styx h2{color:var(--teal-ink)}
+  .styx-card{background:var(--card);border:1px solid color-mix(in srgb,var(--teal) 18%,var(--line));border-radius:var(--r);padding:20px 22px;margin-bottom:14px}
+  .styx-card h3{color:var(--teal-ink);display:flex;align-items:center;gap:10px}
+  .styx-card h3 .idx{font-family:var(--mono);font-size:12px;color:#fff;background:var(--teal);border-radius:6px;padding:2px 8px}
+  .styx-card .feat{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--teal-ink);background:var(--teal-bg);border-radius:6px;padding:2px 8px;display:inline-block;margin-left:auto}
+  code.inl{font-family:var(--mono);font-size:13px;background:var(--paper);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;color:var(--teal-ink)}
+
+  /* silent-deterioration mini-viz */
+  .viz{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:8px 0 16px}
+  .viz .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+  .viz .legend span{display:inline-flex;align-items:center;gap:7px}
+  .viz .legend i{width:16px;height:0;border-top:2.5px solid currentColor;display:inline-block}
+  .svgwrap{width:100%;overflow-x:auto}
+
+  /* footer */
+  footer{padding:40px 0 70px}
+  .attrib{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;font-size:13.5px;color:var(--ink-2)}
+  .attrib b{color:var(--ink)}
+  .disc{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);line-height:1.6;margin-top:14px}
+  .srcs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .srcs a{font-family:var(--mono);font-size:12px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 11px;border-bottom:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="prov">
+      <span class="pill">Royal College of Physicians</span>
+      <span class="pill">Updated Dec 2017</span>
+      <span class="pill">NHS England endorsed</span>
+      <span class="pill">Adults · acute illness & sepsis</span>
+    </div>
+    <h1 class="title">NEWS<span class="v">2</span></h1>
+    <p class="lede">The national early warning score: six bedside vital signs turned into one number that grades how acutely ill an adult is — and how fast someone should respond.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>Respiration rate</span>
+      <span class="chip"><span class="dot"></span>SpO₂ (Scale 1 / 2)</span>
+      <span class="chip"><span class="dot"></span>Air or oxygen</span>
+      <span class="chip"><span class="dot"></span>Systolic BP</span>
+      <span class="chip"><span class="dot"></span>Pulse</span>
+      <span class="chip"><span class="dot"></span>Consciousness (ACVPU)</span>
+      <span class="chip"><span class="dot"></span>Temperature</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <div class="row">
+      <a href="#what">What it is</a>
+      <a href="#calc">Live calculator</a>
+      <a href="#params">The seven elements</a>
+      <a href="#response">Response ladder</a>
+      <a href="#changes">What changed in 2017</a>
+      <a href="#limits">Where it breaks</a>
+      <a href="#styx">STYX synthesis</a>
+      <a href="#refs">Sources</a>
+    </div>
+  </div>
+</nav>
+
+<!-- 1. WHAT IT IS -->
+<section id="what">
+  <div class="wrap">
+    <div class="sec-head"><span class="num">01</span><h2>What it is, in one breath</h2></div>
+    <div class="pair">
+      <div class="pane plain">
+        <span class="tag">Plain</span>
+        <p>A nurse measures six things at the bedside — breathing, oxygen, blood pressure, pulse, alertness, temperature — plus whether the patient needs extra oxygen. Each measurement earns 0 to 3 points the further it strays from normal. Add them up. A small number means routine checks; a big number means call for help, now. It's a shared language so that a worry in A&E, on a ward, or in an ambulance all mean the same thing and trigger the same response.</p>
+      </div>
+      <div class="pane tech">
+        <span class="tag">Technical</span>
+        <p>NEWS2 is a deterministic aggregate-weighted track-and-trigger system over six physiological parameters, with a binary +2 uplift for supplemental oxygen. Each parameter maps through a fixed lookup to an ordinal sub-score {0,1,2,3}; the summed aggregate (0–20+) plus a single-parameter "red score" rule indexes four clinical-risk tiers, each bound to a recommended monitoring frequency and escalation pathway (Chart 4). It is purely a function of the current observation set — no trend, no history, no demographics.</p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:6px">NHS England and NHS Improvement endorse NEWS2 as the early-warning system for detecting acute illness — including sepsis — in adults across English hospitals, and increasingly across the whole acute pathway including ambulances and virtual wards. The RCP is explicit that it <b>supplements clinical judgement; it does not replace it.</b></p>
+  </div>
+</section>
+
+<!-- 2. CALCULATOR -->
+<section id="calc">
+  <div class="wrap">
+    <div class="sec-head"><span class="num">02</span><h2>The scoring engine, live</h2></div>
+    <p class="muted">Because the mapping is a pure lookup, the score is fully reproducible. Change a value and every component re-scores instantly. The "RCP worked example" button loads the 82-year-old COVID case from the published guidance — the engine should return exactly 13.</p>
+    <div class="calc" id="calcRoot">
+      <div class="calc-top">
+        <span class="lhs" id="scaleLabel">SpO₂ scoring · Scale 1 (default)</span>
+        <div class="presets">
+          <div class="scale-toggle"><div class="seg" role="group" aria-label="Oxygen saturation scale">
+            <button id="scale1" aria-pressed="true">Scale 1</button>
+            <button id="scale2" aria-pressed="false">Scale 2</button>
+          </div></div>
+          <button class="btn" id="presetWell">Reset · well patient</button>
+          <button class="btn" id="presetRCP">RCP worked example (13)</button>
+        </div>
+      </div>
+      <div class="calc-grid">
+        <div class="field">
+          <div class="lab"><span class="n">Respiration rate</span><span class="u">breaths / min</span></div>
+          <div class="control">
+            <div class="stepper"><button data-step="rr" data-d="-1" aria-label="decrease respiration rate">−</button><input id="rr" type="number" value="18" aria-label="respiration rate"><button data-step="rr" data-d="1" aria-label="increase respiration rate">+</button></div>
+            <span class="scorebadge" id="rr-s">0</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="n">Oxygen saturation</span><span class="u" id="spo2-u">SpO₂ % · Scale 1</span></div>
+          <div class="control">
+            <div class="stepper"><button data-step="spo2" data-d="-1" aria-label="decrease SpO2">−</button><input id="spo2" type="number" value="98" aria-label="oxygen saturation"><button data-step="spo2" data-d="1" aria-label="increase SpO2">+</button></div>
+            <span class="scorebadge" id="spo2-s">0</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="n">Air or oxygen</span><span class="u">supplemental O₂ → +2</span></div>
+          <div class="control">
+            <div class="seg" role="group" aria-label="air or oxygen">
+              <button id="air" aria-pressed="true">Air</button>
+              <button id="oxy" aria-pressed="false">Oxygen</button>
+            </div>
+            <span class="scorebadge" id="o2-s">0</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="n">Systolic blood pressure</span><span class="u">mmHg</span></div>
+          <div class="control">
+            <div class="stepper"><button data-step="sbp" data-d="-1" aria-label="decrease systolic">−</button><input id="sbp" type="number" value="124" aria-label="systolic blood pressure"><button data-step="sbp" data-d="1" aria-label="increase systolic">+</button></div>
+            <span class="scorebadge" id="sbp-s">0</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="n">Pulse</span><span class="u">beats / min</span></div>
+          <div class="control">
+            <div class="stepper"><button data-step="pulse" data-d="-1" aria-label="decrease pulse">−</button><input id="pulse" type="number" value="74" aria-label="pulse"><button data-step="pulse" data-d="1" aria-label="increase pulse">+</button></div>
+            <span class="scorebadge" id="pulse-s">0</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="n">Consciousness</span><span class="u">ACVPU</span></div>
+          <div class="control">
+            <div class="seg" role="group" aria-label="consciousness ACVPU">
+              <button id="acvpuA" aria-pressed="true">Alert</button>
+              <button id="acvpuX" aria-pressed="false">C / V / P / U</button>
+            </div>
+            <span class="scorebadge" id="acvpu-s">0</span>
+          </div>
+        </div>
+        <div class="field" style="grid-column:1 / -1;border-right:none">
+          <div class="lab"><span class="n">Temperature</span><span class="u">°C</span></div>
+          <div class="control">
+            <div class="stepper"><button data-step="temp" data-d="-1" aria-label="decrease temperature">−</button><input id="temp" type="number" step="0.1" value="36.8" aria-label="temperature"><button data-step="temp" data-d="1" aria-label="increase temperature">+</button></div>
+            <span class="scorebadge" id="temp-s">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="readout">
+        <div class="total b0" id="totalBox">
+          <span class="k">Aggregate</span>
+          <span class="v" id="total">0</span>
+        </div>
+        <div class="band">
+          <div class="name"><span id="bandName">Routine</span><span class="tagband b0" id="bandTag">Low</span></div>
+          <div id="redFlagWrap"></div>
+          <div class="freq" id="freq">Minimum monitoring: every 12 hours</div>
+          <div class="resp" id="resp">Continue routine NEWS2 monitoring.</div>
+        </div>
+      </div>
+      <div class="calc-note" id="calcNote">Scale 2 is for confirmed hypercapnic respiratory failure only (e.g. some COPD), target SpO₂ 88–92%, and only on clinical direction.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. PARAMETERS -->
+<section id="params">
+  <div class="wrap">
+    <div class="sec-head"><span class="num">03</span><h2>The seven scored elements</h2></div>
+    <p class="muted">Six physiological parameters, each scored 0–3, plus a binary oxygen uplift. Each one is in the score for a physiological reason, and the <i>shape</i> of its scoring bands — symmetric, one-sided, or skewed — encodes what the body does as it fails. The colour ramp is the clinical convention: <span class="mono" style="color:var(--s0)">0 calm</span> → <span class="mono" style="color:var(--s1)">1</span> → <span class="mono" style="color:var(--s2)">2</span> → <span class="mono" style="color:var(--s3)">3 alarming</span>. Tables reproduce the RCP scoring values; for clinical use, download the official colour charts linked at the foot of the page.</p>
+
+    <p class="muted" style="font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px"><b>One idea unlocks the whole score:</b> vital signs don't drift randomly as someone deteriorates — the body <i>compensates</i>. It speeds breathing and heart rate to defend oxygen delivery and blood pressure, and it holds those defences until they collapse. So the <b>early</b> signs are the compensations (fast breathing, fast pulse) and the <b>late, ominous</b> signs are the failures of compensation (falling BP, falling consciousness, a slowing respiratory rate from exhaustion). NEWS2's weights and band-shapes are a rough map of that timeline.</p>
+
+    <!-- RESPIRATION RATE -->
+    <div class="param">
+      <div class="param-head"><span class="pn">01</span><h3>Respiration rate</h3><span class="unit">breaths / min</span></div>
+      <div class="param-body">
+        <div class="param-table">
+          <table><thead><tr><th>Range</th><th>Score</th></tr></thead><tbody>
+            <tr><td class="rng">≤ 8</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng">9 – 11</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">12 – 20</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">21 – 24</td><td><span class="stab sc2">2</span></td></tr>
+            <tr><td class="rng">≥ 25</td><td><span class="stab sc3">3</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="param-why">
+          <div class="lead">The single most sensitive early warning sign — and the most neglected.</div>
+          <p>Breathing rate is the body's fastest, cheapest lever. It rises early in almost every acute problem — to blow off acid in sepsis or shock, to grab more oxygen in pneumonia, in response to pain or anxiety — often <b>before</b> the heart rate climbs or the blood pressure drops. That early-mover quality is why a rising respiratory rate is the best single predictor of deterioration on a ward.</p>
+          <div class="ends">
+            <span class="endtag hi"><b>High (≥25):</b> hypoxia, acidosis, sepsis, pain</span>
+            <span class="endtag lo"><b>Low (≤8):</b> CNS depression, opioids, exhaustion</span>
+          </div>
+          <p style="margin-top:8px">Both ends score 3 because they bracket opposite catastrophes. A very <i>low</i> rate is especially sinister: it can mean the respiratory centre is being suppressed (opioids, rising CO₂, head injury) or that a patient who was breathing fast has <i>tired out</i> and is heading for arrest — a falling rate after a high one is a pre-terminal sign, not an improvement.</p>
+          <div class="keyline">In practice RR is the vital sign most often eyeballed or skipped. If STYX surfaces one thing well, the slope of respiratory rate is the highest-yield candidate.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SpO2 + scales -->
+    <div class="param">
+      <div class="param-head"><span class="pn">02</span><h3>Oxygen saturation (SpO₂)</h3><span class="unit">% · two scales</span></div>
+      <div class="param-body">
+        <div class="param-table">
+          <table><thead><tr><th>Scale 1 · most patients</th><th></th></tr></thead><tbody>
+            <tr><td class="rng">≥ 96</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">94 – 95</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">92 – 93</td><td><span class="stab sc2">2</span></td></tr>
+            <tr><td class="rng">≤ 91</td><td><span class="stab sc3">3</span></td></tr>
+          </tbody></table>
+          <table style="border-top:1px solid var(--line-2)"><thead><tr><th>Scale 2 · hypercapnic</th><th></th></tr></thead><tbody>
+            <tr><td class="rng">≥ 97 on O₂</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng">95 – 96 on O₂</td><td><span class="stab sc2">2</span></td></tr>
+            <tr><td class="rng">93 – 94 on O₂</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">≥ 93 on air</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">88 – 92</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">86 – 87</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">84 – 85</td><td><span class="stab sc2">2</span></td></tr>
+            <tr><td class="rng">≤ 83</td><td><span class="stab sc3">3</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="param-why">
+          <div class="lead">How well the blood is carrying oxygen — but a reading that lies late.</div>
+          <p>SpO₂ is the percentage of haemoglobin loaded with oxygen. The catch is the oxyhaemoglobin dissociation curve: saturation stays reassuringly near-normal across a wide range of declining oxygen, then <b>falls off a cliff</b> once a threshold is crossed. So a "normal" SpO₂ can sit on the edge of that cliff — which is exactly why respiratory rate (the early compensator) matters alongside it.</p>
+          <p><b>Two scales exist for one reason.</b> A minority of patients — typically COPD in chronic type-2 (hypercapnic) respiratory failure — are harmed by <i>too much</i> oxygen: it suppresses their respiratory drive and lets CO₂ climb dangerously. Their safe target is 88–92%, not ≥96%.</p>
+          <div class="ends">
+            <span class="endtag lo"><b>Scale 1 default</b> · 0-band ≥96%</span>
+            <span class="endtag hi"><b>Scale 2</b> · 0-band 88–92%</span>
+          </div>
+          <p style="margin-top:8px">Scale 2 re-centres "normal" on that lower target and, counter-intuitively, <b>penalises high saturations achieved on oxygen</b> — ≥97% on O₂ scores 3 — because in a CO₂ retainer that signals dangerous over-oxygenation. It is used only on explicit senior/clinical direction, and the same patient must never be scored on both scales at once.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- O2 uplift -->
+    <div class="param">
+      <div class="param-head"><span class="pn">03</span><h3>Air or oxygen</h3><span class="unit">binary uplift → +2</span></div>
+      <div class="param-body">
+        <div class="param-table">
+          <table><thead><tr><th>State</th><th>Score</th></tr></thead><tbody>
+            <tr><td class="rng">Breathing air</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">Any supplemental O₂</td><td><span class="stab sc2">2</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="param-why">
+          <div class="lead">Not a vital sign — a marker of how much support the patient already needs.</div>
+          <p>Two patients can both read 96%, but one is doing it on room air and the other only with an oxygen mask. The second is sicker: the same result is being <i>propped up</i>. NEWS2 captures this with a flat +2 whenever supplemental oxygen is running — it's a proxy for physiological support burden, not a measurement.</p>
+          <div class="keyline">⚠ The cliff: because it's binary, a patient whose oxygen need climbs steeply at a fixed SpO₂ shows NO change in NEWS2. The RCP therefore says ANY rise in oxygen requirement should escalate on its own. Tracking O₂ flow / FiO₂ as a continuous variable is the single clearest thing a trajectory tool adds here.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SBP -->
+    <div class="param">
+      <div class="param-head"><span class="pn">04</span><h3>Systolic blood pressure</h3><span class="unit">mmHg</span></div>
+      <div class="param-body">
+        <div class="param-table">
+          <table><thead><tr><th>Range</th><th>Score</th></tr></thead><tbody>
+            <tr><td class="rng">≤ 90</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng">91 – 100</td><td><span class="stab sc2">2</span></td></tr>
+            <tr><td class="rng">101 – 110</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">111 – 219</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">≥ 220</td><td><span class="stab sc3">3</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="param-why">
+          <div class="lead">A late alarm: by the time it falls, compensation has already failed.</div>
+          <p>The body fights hard to defend blood pressure — clamping down blood vessels and speeding the heart to hold perfusion. It can lose a substantial fraction of circulating volume while keeping systolic BP near-normal. So a <b>falling</b> systolic pressure is not an early warning; it's a sign the compensatory reserves are exhausted, which is why ≤90 scores the maximum 3 and the low side is weighted heavily (3 → 2 → 1 as it climbs back).</p>
+          <div class="ends">
+            <span class="endtag lo"><b>Low (≤90):</b> decompensated shock — ominous</span>
+            <span class="endtag hi"><b>Very high (≥220):</b> hypertensive emergency</span>
+          </div>
+          <p style="margin-top:8px">The score reads systolic only and is blunt at the top end — a single ≥220 band — because NEWS2 is built to catch acute collapse, not to manage chronic hypertension. Watching <i>only</i> the number misses the patient whose pressure is sliding 150 → 120 → 112: real, dangerous movement that never leaves the 0-band.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pulse -->
+    <div class="param">
+      <div class="param-head"><span class="pn">05</span><h3>Pulse</h3><span class="unit">beats / min</span></div>
+      <div class="param-body">
+        <div class="param-table">
+          <table><thead><tr><th>Range</th><th>Score</th></tr></thead><tbody>
+            <tr><td class="rng">≤ 40</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng">41 – 50</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">51 – 90</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">91 – 110</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">111 – 130</td><td><span class="stab sc2">2</span></td></tr>
+            <tr><td class="rng">≥ 131</td><td><span class="stab sc3">3</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="param-why">
+          <div class="lead">An early compensator at the top, a pre-arrest sign at the bottom.</div>
+          <p>A rising heart rate is one of the body's first moves to defend oxygen delivery — in bleeding, sepsis, dehydration, pain or fear. The high side climbs gradually (1 → 2 → 3) because mild tachycardia is common and non-specific, but a sustained, rising rate is an early and reliable flag. Note the asymmetry: the bands are not symmetric around normal, mirroring that tachycardia and bradycardia mean very different things.</p>
+          <div class="ends">
+            <span class="endtag hi"><b>High (≥131):</b> shock, sepsis, arrhythmia</span>
+            <span class="endtag lo"><b>Low (≤40):</b> heart block, peri-arrest, raised ICP</span>
+          </div>
+          <p style="margin-top:8px"><b>Caveat for a builder:</b> a rate-limiting drug such as a beta-blocker can blunt the tachycardia the score relies on, so a "normal" pulse in a beta-blocked patient is less reassuring than it looks — one reason trend and context beat any single threshold.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACVPU -->
+    <div class="param">
+      <div class="param-head"><span class="pn">06</span><h3>Consciousness — ACVPU</h3><span class="unit">all-or-nothing</span></div>
+      <div class="param-body">
+        <div class="param-table">
+          <table><thead><tr><th>State</th><th>Score</th></tr></thead><tbody>
+            <tr><td class="rng"><b>A</b>lert</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">new <b>C</b>onfusion</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng"><b>V</b>oice</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng"><b>P</b>ain</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng"><b>U</b>nresponsive</td><td><span class="stab sc3">3</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="param-why">
+          <div class="lead">The brain as a perfusion gauge — and the 2017 addition that matters most.</div>
+          <p>The brain is exquisitely sensitive to oxygen and perfusion, so a change in alertness is a powerful sign that something systemic is failing. NEWS2 upgraded the older <b>AVPU</b> scale to <b>ACVPU</b> by inserting <b>C</b> for new-onset confusion — recognising delirium as an early, frequently-missed marker of sepsis, hypoxia and metabolic derangement.</p>
+          <p>It is deliberately all-or-nothing: anything below "Alert" scores the full 3, with no partial credit. <b>New</b> confusion, disorientation or agitation counts even if the patient still answers questions coherently — and it must be <i>new</i>, against their usual baseline, which is why a known-dementia baseline has to be established to avoid false positives.</p>
+          <div class="keyline">A clean discrete signal for STYX: an A→C transition is a high-information event worth flagging on its own, independent of the aggregate.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Temp -->
+    <div class="param">
+      <div class="param-head"><span class="pn">07</span><h3>Temperature</h3><span class="unit">°C</span></div>
+      <div class="param-body">
+        <div class="param-table">
+          <table><thead><tr><th>Range</th><th>Score</th></tr></thead><tbody>
+            <tr><td class="rng">≤ 35.0</td><td><span class="stab sc3">3</span></td></tr>
+            <tr><td class="rng">35.1 – 36.0</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">36.1 – 38.0</td><td><span class="stab sc0">0</span></td></tr>
+            <tr><td class="rng">38.1 – 39.0</td><td><span class="stab sc1">1</span></td></tr>
+            <tr><td class="rng">≥ 39.1</td><td><span class="stab sc2">2</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="param-why">
+          <div class="lead">Both directions matter — and cold can be worse than hot.</div>
+          <p>Temperature is a modestly-weighted, relatively non-specific parameter — fever has many causes — which is why it tops out at 2 rather than 3. But the band shape carries a clinical truth often missed by non-clinicians: the <b>low</b> end is weighted as heavily as the very high end. Hypothermia (≤35.0 scores 3) can reflect severe sepsis with a failing thermoregulatory response — "cold sepsis" — which carries a worse prognosis than the febrile presentation, as well as environmental exposure or endocrine collapse.</p>
+          <div class="ends">
+            <span class="endtag hi"><b>High (≥39.1):</b> infection, inflammation</span>
+            <span class="endtag lo"><b>Low (≤35.0):</b> cold sepsis, exposure — ominous</span>
+          </div>
+          <p style="margin-top:8px">Because it's non-specific, temperature rarely moves the score alone; its value is as corroboration — a fever <i>plus</i> a rising respiratory rate and new confusion is a very different picture from any one of them in isolation.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 4. RESPONSE LADDER -->
+<section id="response">
+  <div class="wrap">
+    <div class="sec-head"><span class="num">04</span><h2>From number to action: the response ladder</h2></div>
+    <p class="muted">The aggregate score, plus the single-parameter "red score" rule, maps to four clinical-risk tiers (RCP Chart 2 &amp; 4). Each tier sets a <i>minimum</i> monitoring frequency and an escalation pathway. Trusts adapt the exact wording locally, but the thresholds are national.</p>
+    <div class="ladder">
+      <div class="rung r0">
+        <div class="score"><span class="big">0</span><span class="risk">Routine</span></div>
+        <div class="detail"><span class="freq2">≥ 12-hourly</span><p>Continue routine NEWS2 monitoring with every set of observations.</p></div>
+      </div>
+      <div class="rung r1">
+        <div class="score"><span class="big">1–4</span><span class="risk">Low</span></div>
+        <div class="detail"><span class="freq2">4–6 hourly</span><p>Registered nurse assesses the patient and decides whether to increase monitoring frequency or escalate care.</p></div>
+      </div>
+      <div class="rung rred">
+        <div class="score"><span class="big">3</span><span class="risk">in one parameter · Low–med</span></div>
+        <div class="detail"><span class="freq2">≥ 1-hourly</span><p>"Red score." Registered nurse informs the medical team caring for the patient; urgent review by a clinician (e.g. ward-based doctor) to decide on escalation — even if the aggregate is otherwise low.</p></div>
+      </div>
+      <div class="rung r2">
+        <div class="score"><span class="big">5–6</span><span class="risk">Medium · KEY</span></div>
+        <div class="detail"><span class="freq2">≥ 1-hourly</span><p>The key trigger for an urgent response. Nurse urgently informs the medical team; urgent assessment by a clinician/team skilled in acute illness, in a setting with monitoring facilities.</p></div>
+      </div>
+      <div class="rung r3">
+        <div class="score"><span class="big">≥ 7</span><span class="risk">High</span></div>
+        <div class="detail"><span class="freq2">Continuous</span><p>Emergency response. Immediate review by a team with critical-care competencies including airway management; usually transfer to a higher level of care.</p></div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:18px;font-size:14px">The "red score" rule is what stops a single catastrophic parameter from being averaged away. A patient with a respiratory rate of 6 (score 3) and otherwise normal observations has an aggregate of only 3 — but still warrants urgent review.</p>
+  </div>
+</section>
+
+<!-- 5. CHANGES -->
+<section id="changes">
+  <div class="wrap">
+    <div class="sec-head"><span class="num">05</span><h2>What changed: NEWS (2012) → NEWS2 (2017)</h2></div>
+    <div class="grid2">
+      <div class="note"><h3><span class="k">Δ 1</span>Two SpO₂ scales</h3><p class="muted" style="margin-bottom:0">The single oxygen scale was split into Scale 1 (default) and Scale 2 for patients with hypercapnic respiratory failure and a prescribed 88–92% target — the most clinically significant change, designed to stop over-oxygenation harm in CO₂ retainers.</p></div>
+      <div class="note"><h3><span class="k">Δ 2</span>AVPU → ACVPU</h3><p class="muted" style="margin-bottom:0">New-onset confusion was added as a scoring state, recognising delirium as an early, often-missed sign of deterioration and sepsis.</p></div>
+      <div class="note"><h3><span class="k">Δ 3</span>Sepsis &amp; system role</h3><p class="muted" style="margin-bottom:0">Clearer guidance on use across the acute pathway, and formal positioning as the NHS England-endorsed tool for flagging acute illness including sepsis.</p></div>
+      <div class="note"><h3><span class="k">2022</span>Chart refresh</h3><p class="muted" style="margin-bottom:0">The observation chart was refreshed in 2022, but the scoring and thresholds were unchanged. There is no "NEWS3"; NEWS2 remains current.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. LIMITS -->
+<section id="limits">
+  <div class="wrap">
+    <div class="sec-head"><span class="num">06</span><h2>Where it breaks — and why that matters to a builder</h2></div>
+    <p class="muted">A scoring system this widely mandated invites over-trust. The honest limitations are exactly the design space for a tool like STYX, so they are worth stating plainly.</p>
+
+    <div class="callout">
+      <span class="tag">RCP's own COVID caveat — the oxygen cliff</span>
+      <p style="color:var(--ink);margin-bottom:0">Oxygen scoring is binary (+2, on or off). A patient whose oxygen requirement climbs steeply at a fixed SpO₂ shows <b>no change in NEWS2</b>. The RCP therefore instructs that <b>any</b> increase in oxygen requirement should itself trigger escalation and at-least-hourly observations, independent of the score. The number cannot see this; a human or a trend-aware system must.</p>
+    </div>
+
+    <ul class="clean">
+      <li><b>It is a snapshot, not a trajectory.</b> NEWS2 is a pure function of the current observation set. Two patients can share a score while one is recovering and the other collapsing. Direction and velocity carry information the aggregate discards.</li>
+      <li><b>Compensation hides inside bands.</b> Respiration rate can drift 13 → 19 → 20 — real deterioration — while scoring a flat 0 throughout. Sub-threshold drift is invisible to the aggregate by construction.</li>
+      <li><b>Offsetting components mask the total.</b> One parameter worsening as another improves can hold the aggregate still even as the physiology diverges. Only component-level views reveal it.</li>
+      <li><b>Alert burden vs sensitivity is a real trade-off.</b> In a 100k-admission UK study, sensitivity for death/ICU within 24h at the ≥5 threshold was ~0.46 with a number-needed-to-evaluate around 52, and discrimination was markedly better using all scores across a stay (c-stat ≈0.85) than a single index score (≈0.78). Lowering thresholds to catch more roughly doubles the alert load.</li>
+      <li><b>Population transfer is not free.</b> NEWS2 was developed and validated for acute hospital inpatients. Its performance in virtual wards, frailty, the home setting, pregnancy (use a modified obstetric chart), and under-16s (use PEWS) is different — NHS England itself calls NEWS2 "important, if not definitive" for virtual-ward acuity.</li>
+      <li><b>Chronic baselines distort it.</b> Someone chronically hypoxic or tachycardic may sit at a raised "normal," inflating scores; conversely, beta-blockade can blunt the tachycardic response the score relies on.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. STYX -->
+<section id="styx" class="styx">
+  <div class="wrap">
+    <span class="badge-sec">◆ Synthesis for the builder · Pj-STYX</span>
+    <div class="sec-head"><span class="num" style="color:var(--teal)">07</span><h2>What NEWS2 means for STYX</h2></div>
+    <p class="muted" style="max-width:72ch">STYX began as a Virtual Wards build — a state-space trajectory view, a silent-deterioration early-warning layer, and a Theograph care-history overlay, positioned to <b>advise, not guide</b>. NEWS2 is the natural substrate: nationally mandated, copyright-free, deterministic, instantly legible to every NHS clinician. The differentiation is never in re-deriving acuity; it is in restoring the two things NEWS2 throws away — <b>time and component structure</b>.</p>
+
+    <div class="styx-card" style="border-color:color-mix(in srgb,var(--teal) 40%,var(--line))">
+      <h3><span class="idx">◆</span>The pattern, not the place — why the scope is a mixed bag on purpose</h3>
+      <p class="muted">The virtual ward is the first instance of a <i>recurring</i> pattern, and naming the pattern is what lets the scope expand without the product losing focus. STYX is for:</p>
+      <p class="muted" style="font-weight:600;color:var(--teal-ink);background:var(--teal-bg);border-radius:10px;padding:12px 16px">A large population of broadly stable, non-ITU-risk patients, monitored intermittently by a team too small to watch everyone closely, where the cost of failure is missing the few who silently slip.</p>
+      <p class="muted">Wherever that shape holds, the same engine applies and only the surrounding parameters change — the baseline physiology, the observation cadence, the staffing model, the connectivity, the deterioration phenotype, and (critically) <b>how well NEWS2 itself is validated in that setting</b>. The score is least proven in exactly these expansion contexts, which makes "advise, not guide" honesty as much as compliance. The three contexts below are one product with three configurations, not three products.</p>
+    </div>
+
+    <div class="ctx-tabs" role="group" aria-label="Deployment context">
+      <button class="ctx-tab" data-ctx="vw" aria-pressed="true"><span class="k">A · NHS Virtual Wards</span> origin</button>
+      <button class="ctx-tab" data-ctx="nhs" aria-pressed="false"><span class="k">B · NHS acute expansion</span> step-down &amp; ward</button>
+      <button class="ctx-tab" data-ctx="mil" aria-pressed="false"><span class="k">C · Military</span> stable / post-resus holding</button>
+    </div>
+
+    <!-- CONTEXT A -->
+    <div class="ctx-panel on" data-panel="vw">
+      <div class="styx-card">
+        <h3><span class="idx">A</span>NHS Virtual Wards — the proving ground <span class="feat">origin scope</span></h3>
+        <p class="muted">Hospital-at-home: acute-level patients monitored remotely, often by a single team covering a large caseload, with observations taken by the patient or a carer rather than a nurse. NHS England names NEWS2 as <b>"important, if not definitive"</b> for virtual-ward acuity and explicitly notes no single acuity method is used consistently — that gap is the opening. The deterioration that matters here is the slow overnight slide that nobody is watching in real time; recent NHS safety work found patients and carers carry much of that monitoring burden out of hours.</p>
+        <p class="muted" style="margin-bottom:0"><b>STYX's job here:</b> turn intermittent, carer-collected observations into a trajectory a remote clinician can triage at a glance the next morning — and flag the patient whose flat aggregate hides a real slope.</p>
+      </div>
+    </div>
+
+    <!-- CONTEXT B -->
+    <div class="ctx-panel" data-panel="nhs">
+      <div class="styx-card">
+        <h3><span class="idx">B</span>NHS acute expansion — where NEWS2 is strongest <span class="feat">expansion scope</span></h3>
+        <p class="muted">The broader deteriorating-patient agenda: general wards, step-down and post-operative units, acute medical units — the setting NEWS2 was actually developed and validated in. Here the score is on its firmest ground, so STYX's value shifts from <i>compensating for</i> the score to <i>amplifying</i> it: surfacing trends across a whole ward, reducing the alert fatigue that comes from snapshot-only triggers, and making the audit question ("did monitoring cadence actually follow the score?") visible. This is the lowest-regulatory-risk, highest-evidence-base context — a sensible place to validate before harder settings.</p>
+        <p class="muted" style="margin-bottom:0"><b>STYX's job here:</b> a ward-level trajectory and cadence-compliance lens that complements the existing mandated NEWS2 workflow rather than competing with it.</p>
+      </div>
+    </div>
+
+    <!-- CONTEXT C -->
+    <div class="ctx-panel" data-panel="mil">
+      <div class="styx-card" style="border-color:color-mix(in srgb,var(--teal) 35%,var(--line))">
+        <h3><span class="idx">C</span>Military — the stable, post-resuscitation population <span class="feat">expansion scope</span></h3>
+        <p class="muted"><b>The language has to be precise here, because the obvious framing is wrong.</b> NEWS2 is a civilian acute-<i>illness</i> score, and it is demonstrably weak in acute <i>trauma</i>: in a 2022 UK ED study, most patients needing time-critical surgical intervention scored NEWS2 ≤4, because compensated haemorrhagic shock holds vital signs near-normal until late. So STYX's military case is emphatically <b>not</b> point-of-injury triage, not the damage-control phase, and not a casualty-estimation engine — that is FAER-MIL's territory.</p>
+        <p class="muted">The military fit is the <b>downstream</b> population: casualties who have already been resuscitated and stabilised and are now being <i>held and observed</i> — at a Role 2/Role 3 medical treatment facility, in a holding or reception ward, or under <b>Prolonged Casualty Care (PCC)</b> when evacuation is delayed beyond doctrinal timelines. PCC is a recognised UK concept, and NEWS2 already appears in PCC sepsis-screening guidance for the austere setting. Under large-scale combat operations (LSCO), this population is large, the medic-to-patient ratio is stretched thin, and the threat is the post-operative bleed, the developing wound sepsis, the missed compartment syndrome — slow secondary deterioration in someone who looked stable an hour ago.</p>
+        <div class="keyline" style="margin-bottom:12px">Defensible one-liner: "STYX is a trajectory-monitoring layer for the stable, post-resuscitation holding population — Role 2/3 and Prolonged Casualty Care — where thin staffing meets large numbers and the risk is silent secondary deterioration. It complements, and never substitutes for, TCCC/BATLS at the point of injury."</div>
+        <p class="muted" style="margin-bottom:0"><b>Watch-outs specific to this context:</b> NEWS2's thresholds assume a civilian adult baseline (a fit 22-year-old soldier's compensatory reserve differs from the hospital population the score was tuned on); connectivity is contested and intermittent, so the engine must degrade gracefully offline; and trauma-specific physiology (massive transfusion, traumatic brain injury, burns) sits outside NEWS2's design envelope. The right posture is a <b>monitoring aid for the stabilised, not a triage authority for the injured</b> — and a candidate for trauma-aware parameters layered on top, flagged below.</p>
+      </div>
+    </div>
+
+    <!-- COMPARISON MATRIX -->
+    <div class="matrix-wrap">
+      <table>
+        <thead><tr><th scope="col">What changes</th><th scope="col">A · Virtual Wards</th><th scope="col">B · NHS acute</th><th scope="col">C · Military holding / PCC</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Patient baseline</th><td>Elderly, comorbid, frail</td><td>Mixed acute inpatients</td><td><b>Young, fit, high reserve</b> — masks decline longer</td></tr>
+          <tr><th scope="row">Deterioration phenotype</th><td>Slow overnight slide</td><td>Ward decompensation</td><td>Secondary: re-bleed, wound sepsis, compartment syndrome</td></tr>
+          <tr><th scope="row">Observation cadence</th><td>Intermittent, carer-led</td><td>Protocolised, staff-led</td><td>Irregular, ratio-constrained under MASCAL</td></tr>
+          <tr><th scope="row">Connectivity</th><td>Home broadband, variable</td><td>Reliable, networked</td><td><b>Contested / intermittent</b> — must work offline</td></tr>
+          <tr><th scope="row">NEWS2 validity</th><td>"Important, not definitive"</td><td><b>Strongest</b> — its home setting</td><td>Stable phase only; weak in acute trauma</td></tr>
+          <tr><th scope="row">Regulatory risk</th><td>Medium (SaMD likely)</td><td>Lower — augments mandated flow</td><td>Defence governance, separate pathway</td></tr>
+          <tr><th scope="row">STYX's primary job</th><td>Trajectory from sparse obs</td><td>Ward trend + cadence audit</td><td>Watch the stable many, thin staff</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px;margin-bottom:8px">The columns share an engine; they differ only in configuration. That is the argument for building the scoring + trajectory core as a clean, context-agnostic module (below) with the per-context assumptions — baselines, cadence rules, offline behaviour, trauma-aware parameters — pushed to the edges as configuration, not forked code.</p>
+
+    <div class="styx-card">
+      <h3><span class="idx">A</span>NEWS2 as the state vector <span class="feat">state-space view</span></h3>
+      <p class="muted">Treat each observation timestamp as a 7-element vector — <code class="inl">[RR, SpO₂, O₂, SBP, pulse, ACVPU, temp]</code> — with the aggregate as just a 1-D projection of it. STYX's state-space view plots the patient's <i>path</i> through this physiological space; the NEWS2 band boundaries become surfaces in that space, and the velocity vector (direction and rate of travel toward a boundary) is the signal the scalar score cannot express. This is the same "competing clocks" framing from your FAER work: a physiological trajectory racing a response-time clock.</p>
+    </div>
+
+    <div class="styx-card">
+      <h3><span class="idx">B</span>Silent deterioration = the derivative layer <span class="feat">early-warning MVP</span></h3>
+      <p class="muted">This is the core value proposition, and it lives precisely in NEWS2's blind spots above. STYX's early-warning layer is a <b>trend/derivative layer on top of NEWS2, not a replacement for it</b>: per-component rate-of-change (EWMA-smoothed slope), time-in-band, count of sub-threshold increments, ACVPU transitions, and — to answer the RCP's oxygen-cliff caveat — <b>O₂ flow / FiO₂ tracked as a continuous covariate</b> separate from the binary score. The honest place to prove it is the <code class="inl">NEWS2 &lt; 5</code> stratum: where the aggregate is flat is exactly where trajectory should earn its keep. Where the aggregate is already high, the snapshot is doing the work and trend adds little.</p>
+    </div>
+
+    <!-- silent deterioration viz -->
+    <div class="viz">
+      <h3 style="color:var(--teal-ink)">The picture in one chart: same score, opposite patient</h3>
+      <p class="muted" style="font-size:14px">Two components drifting inside their NEWS2 bands. Respiration rate climbs 13→20; systolic BP falls 138→112. <b>Both stay scoring 0, so the aggregate is a flat line</b> — yet the patient is decompensating. The trajectory layer sees the slope the score is built to ignore.</p>
+      <div class="svgwrap">
+        <svg viewBox="0 0 720 240" width="720" height="240" role="img" aria-label="Two physiological parameters drifting within their NEWS2 bands while the aggregate score stays flat at zero">
+          <!-- grid -->
+          <line x1="50" y1="20" x2="50" y2="200" stroke="#E1E6EB" stroke-width="1"/>
+          <line x1="50" y1="200" x2="690" y2="200" stroke="#E1E6EB" stroke-width="1"/>
+          <text x="44" y="30" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="#71808D">high</text>
+          <text x="44" y="198" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="#71808D">low</text>
+          <!-- RR rising (orange-ish) -->
+          <polyline fill="none" stroke="#D8661C" stroke-width="2.5" points="60,150 165,142 270,130 375,112 480,96 585,82 660,70"/>
+          <circle cx="660" cy="70" r="3.5" fill="#D8661C"/>
+          <text x="668" y="74" font-family="IBM Plex Mono" font-size="10" fill="#D8661C">RR 20</text>
+          <!-- SBP falling (red-ish) -->
+          <polyline fill="none" stroke="#C32232" stroke-width="2.5" points="60,60 165,72 270,86 375,104 480,120 585,134 660,150"/>
+          <circle cx="660" cy="150" r="3.5" fill="#C32232"/>
+          <text x="668" y="154" font-family="IBM Plex Mono" font-size="10" fill="#C32232">SBP 112</text>
+          <!-- flat aggregate (teal, dashed) -->
+          <line x1="60" y1="185" x2="660" y2="185" stroke="#0B6E75" stroke-width="2.5" stroke-dasharray="6 5"/>
+          <text x="668" y="189" font-family="IBM Plex Mono" font-size="10" fill="#0B6E75">NEWS2 0</text>
+          <text x="60" y="218" font-family="IBM Plex Mono" font-size="10" fill="#71808D">t₀</text>
+          <text x="650" y="218" font-family="IBM Plex Mono" font-size="10" fill="#71808D">t + 12h</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span style="color:#D8661C"><i></i>Respiration rate (within band)</span>
+        <span style="color:#C32232"><i></i>Systolic BP (within band)</span>
+        <span style="color:#0B6E75"><i></i>NEWS2 aggregate (unchanged)</span>
+      </div>
+    </div>
+
+    <div class="styx-card">
+      <h3><span class="idx">C</span>Theograph overlay = score path against care narrative <span class="feat">care-history overlay</span></h3>
+      <p class="muted">NEWS2 observations are timestamped events, and so are the care actions around them — obs taken, escalation calls, reviews, medications. The Theograph overlay aligns the trajectory with that narrative. One underused signal: NEWS2's own <b>monitoring cadence is data</b>. The protocol says cadence should escalate 12h → 4–6h → 1h → continuous as the score rises; overlaying actual observation timing against what the score demanded turns STYX into a safety/audit lens — directly relevant to recent findings that virtual-ward deterioration is often carried by patients and carers overnight, outside staffed hours.</p>
+    </div>
+
+    <div class="styx-card" style="border-color:color-mix(in srgb,var(--teal) 40%,var(--line));background:linear-gradient(180deg,var(--teal-bg),var(--card) 55%)">
+      <h3><span class="idx">D</span>"Advise, not guide" = sensors, not actuators</h3>
+      <p class="muted">This phrase is doing real regulatory and design work, and NEWS2 backs it up: the RCP frames the score itself as supplementing — never replacing — clinical judgement. Carry that posture into STYX. In Software-as-a-Medical-Device terms (an <b>MHRA classification question for a regulatory specialist, not settled here</b>), the practical fault line is between software that <i>surfaces information for a clinician to interpret</i> and software that <i>directs a clinical action</i>. Concretely, that means:</p>
+      <ul class="clean" style="margin-top:4px">
+        <li>Keep outputs <b>descriptive</b> ("RR has risen 6 over 4h, still within band; SBP trending down") rather than <b>prescriptive</b> ("escalate now").</li>
+        <li>Show the Chart-4 response tiers as <b>attributed reference</b> the clinician applies — don't auto-issue them as machine directives.</li>
+        <li>This is a clean instance of your <b>sensors-not-actuators</b> principle: the silent-deterioration detector is a read-only sensor that flags drift; the clinician remains the actuator. It also enforces epistemic humility — STYX runs in the virtual-ward zone where NEWS2 is explicitly under-validated, so surfacing-not-directing is honesty as much as compliance.</li>
+      </ul>
+    </div>
+
+    <div class="styx-card">
+      <h3><span class="idx">E</span>Engineering notes that fall out of this</h3>
+      <ul class="clean" style="margin-top:2px">
+        <li><b>Deterministic core, free oracle — now shipped.</b> NEWS2 scoring is a pure lookup, an ideal <code class="inl">seed=42</code> RAIE component. This is built: <code class="inl">styx/news2.py</code> implements all seven elements plus both SpO₂ scales, the aggregate, the red-score rule and the Chart-4 band mapping as pure functions; <code class="inl">test_news2.py</code> pins the RCP worked example (=13) as a fixture and uses Hypothesis property tests for band monotonicity and determinism. The calculator above is that same function made visible.</li>
+        <li><b>Missingness is the trap.</b> The clinical default is last-observation-carried-forward, but LOCF on irregular home or field obs distorts every derivative you compute. Be explicit: surface "stale" observations and degrade trend confidence with age-of-observation rather than silently interpolating. The module carries an observation timestamp for exactly this.</li>
+        <li><b>Validate as <i>added</i> discrimination.</b> Pre-register against the same outcome NEWS2 uses (death/ICU within 24h of a score) and ask one clean question: does trend + component structure beat the aggregate alone, specifically in the <code class="inl">NEWS2 &lt; 5</code> stratum? The honest null — that it doesn't, once the score is high — is part of the result, and your MAAFI harness is the right place to adversarially stress it.</li>
+        <li><b>Context lives at the edges.</b> Keep the scoring/trajectory core context-agnostic; push baselines, cadence rules, offline behaviour and any trauma-aware parameters (e.g. a shock-index <code class="inl">HR/SBP</code> overlay for the military holding population, which catches compensated haemorrhage NEWS2 misses) to a config layer per deployment. One engine, three configurations — not a fork per setting.</li>
+        <li><b>Feature shortlist for the 10-feature MVP:</b> aggregate; per-component sub-scores; EWMA slope per component; time-in-current-band; sub-threshold-increment count; ACVPU transition flag; O₂-flow delta; age-of-last-observation; red-score flag; cadence-vs-required gap.</li>
+      </ul>
+    </div>
+
+    <div class="note" style="background:var(--card);border-color:color-mix(in srgb,var(--teal) 25%,var(--line))">
+      <h3 style="color:var(--teal-ink)"><span class="k" style="background:var(--teal)">TL;DR</span>The one-line pitch</h3>
+      <p class="muted" style="margin-bottom:0"><b>NEWS2 tells you where a patient is now; STYX shows where they're heading and how fast</b> — the derivative the score discards — as a read-only sensor that advises the clinician rather than directing them. That value recurs wherever a thin team monitors a large, broadly-stable population intermittently: NHS virtual wards, acute step-down wards, and the military's stabilised holding and Prolonged Casualty Care population. One engine, three configurations; the flat-aggregate-but-drifting zone is where preventable deterioration hides in all of them.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="attrib">
+      <p style="margin-bottom:10px"><b>Clinical source &amp; attribution.</b> Scoring values, thresholds and response tiers are reproduced from: <b>Royal College of Physicians. National Early Warning Score (NEWS) 2: Standardising the assessment of acute-illness severity in the NHS. Updated report of a working party. London: RCP, 2017</b>, cross-checked against NICE (MIB205) and the NHS England Virtual Wards Operational Framework.</p>
+      <p style="margin-bottom:0" class="muted">The RCP places no copyright restriction on NEWS2 but requires that the official charts be reproduced unmodified and in colour. The tables here are an independent re-presentation of the published scoring for explanation; for clinical use, download the official RCP charts below — they are the source of truth.</p>
+      <div class="srcs">
+        <a href="https://www.rcp.ac.uk/resources/national-early-warning-score-news-2/" target="_blank" rel="noopener">RCP · NEWS2 hub</a>
+        <a href="https://www.rcp.ac.uk/media/alxev00t/news2-chart-1_the-news-scoring-system_0_0.pdf" target="_blank" rel="noopener">Chart 1 · scoring</a>
+        <a href="https://www.rcp.ac.uk/media/2acdezkd/news2-chart-2_news-thresholds-and-triggers_0.pdf" target="_blank" rel="noopener">Chart 2 · thresholds</a>
+        <a href="https://www.rcp.ac.uk/media/mrllczrj/news2-chart-4_clinical-response-to-news-trigger-thresholds_0.pdf" target="_blank" rel="noopener">Chart 4 · response</a>
+        <a href="https://www.england.nhs.uk/long-read/virtual-wards-operational-framework/" target="_blank" rel="noopener">NHSE · Virtual Wards framework</a>
+      </div>
+      <p class="disc">Built as an explainer for development work on Pj-STYX. Not a medical device and not clinical advice; it must not be used to make decisions about a real patient. Any tool derived from this — STYX included — that influences clinical care may engage MHRA Software-as-a-Medical-Device regulation; treat classification as a question for a regulatory specialist. NEWS2 supplements but does not replace clinical judgement.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var state = { rr:18, spo2:98, sbp:124, pulse:74, temp:36.8, oxy:false, alert:true, scale2:false };
+
+  // ---- scoring functions (pure lookups, RCP 2017) ----
+  function sRR(v){ if(v<=8)return 3; if(v<=11)return 1; if(v<=20)return 0; if(v<=24)return 2; return 3; }
+  function sPulse(v){ if(v<=40)return 3; if(v<=50)return 1; if(v<=90)return 0; if(v<=110)return 1; if(v<=130)return 2; return 3; }
+  function sSBP(v){ if(v<=90)return 3; if(v<=100)return 2; if(v<=110)return 1; if(v<=219)return 0; return 3; }
+  function sTemp(v){ if(v<=35.0)return 3; if(v<=36.0)return 1; if(v<=38.0)return 0; if(v<=39.0)return 1; return 2; }
+  function sSpO2Scale1(v){ if(v>=96)return 0; if(v>=94)return 1; if(v>=92)return 2; return 3; }
+  function sSpO2Scale2(v,onOxy){
+    if(v<=83)return 3; if(v<=85)return 2; if(v<=87)return 1; if(v<=92)return 0;
+    // v>=93
+    if(onOxy){ if(v<=94)return 1; if(v<=96)return 2; return 3; }
+    return 0;
+  }
+  function sO2(onOxy){ return onOxy?2:0; }
+  function sACVPU(isAlert){ return isAlert?0:3; }
+
+  function cls(n){ return 'sc'+n; }
+
+  function setBadge(id,n){
+    var el=document.getElementById(id);
+    el.textContent=n;
+    el.className='scorebadge '+cls(n);
+  }
+
+  function band(total, anyThree){
+    if(total>=7) return {name:'Emergency response', tag:'High', b:'b3', freq:'Minimum monitoring: continuous', resp:'Immediate review by a team with critical-care competencies including airway management; usually transfer to a higher level of care.'};
+    if(total>=5) return {name:'Urgent response', tag:'Medium', b:'b2', freq:'Minimum monitoring: at least hourly', resp:'Key trigger. Nurse urgently informs the medical team; urgent assessment by a clinician skilled in acute illness, in a monitored setting.'};
+    if(anyThree) return {name:'Urgent ward review', tag:'Low–medium', b:'b3', freq:'Minimum monitoring: at least hourly', resp:'Red score in a single parameter. Nurse informs the medical team; urgent clinician review even though the aggregate is low.'};
+    if(total>=1) return {name:'Ward assessment', tag:'Low', b:'b1', freq:'Minimum monitoring: every 4–6 hours', resp:'Registered nurse assesses the patient and decides whether to change monitoring frequency or escalate.'};
+    return {name:'Routine', tag:'Low', b:'b0', freq:'Minimum monitoring: every 12 hours', resp:'Continue routine NEWS2 monitoring.'};
+  }
+
+  function recompute(){
+    var srr=sRR(state.rr), spu=sPulse(state.pulse), ssb=sSBP(state.sbp), ste=sTemp(state.temp);
+    var ssp = state.scale2 ? sSpO2Scale2(state.spo2, state.oxy) : sSpO2Scale1(state.spo2);
+    var so2=sO2(state.oxy), sac=sACVPU(state.alert);
+
+    setBadge('rr-s',srr); setBadge('pulse-s',spu); setBadge('sbp-s',ssb);
+    setBadge('temp-s',ste); setBadge('spo2-s',ssp); setBadge('o2-s',so2); setBadge('acvpu-s',sac);
+
+    var subs=[srr,spu,ssb,ste,ssp,so2,sac];
+    var total=subs.reduce(function(a,b){return a+b;},0);
+    var anyThree=subs.indexOf(3)>-1;
+
+    document.getElementById('total').textContent=total;
+    var info=band(total,anyThree);
+    var tb=document.getElementById('totalBox'); tb.className='total '+info.b;
+    document.getElementById('bandName').textContent=info.name;
+    var bt=document.getElementById('bandTag'); bt.textContent=info.tag; bt.className='tagband '+info.b;
+    document.getElementById('freq').textContent=info.freq;
+    document.getElementById('resp').textContent=info.resp;
+
+    var rf=document.getElementById('redFlagWrap');
+    rf.innerHTML = anyThree ? '<span class="redflag">⚑ Red score — 3 in a single parameter</span>' : '';
+  }
+
+  // ---- input wiring ----
+  function clampSync(id){
+    var inp=document.getElementById(id);
+    inp.addEventListener('input',function(){
+      var v=parseFloat(inp.value);
+      if(isNaN(v)) return;
+      state[id]= (id==='temp') ? v : Math.round(v);
+      recompute();
+    });
+  }
+  ['rr','spo2','sbp','pulse','temp'].forEach(clampSync);
+
+  document.querySelectorAll('[data-step]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var key=btn.getAttribute('data-step');
+      var d=parseFloat(btn.getAttribute('data-d'));
+      var step=(key==='temp')?0.1:1;
+      var inp=document.getElementById(key);
+      var cur=parseFloat(inp.value); if(isNaN(cur)) cur=0;
+      var nv=cur + d*step;
+      if(key==='temp') nv=Math.round(nv*10)/10;
+      if(key==='spo2') nv=Math.max(50,Math.min(100,nv));
+      if(nv<0) nv=0;
+      inp.value=nv; state[key]= (key==='temp')?nv:Math.round(nv);
+      recompute();
+    });
+  });
+
+  function pair(idOn,idOff,prop,valOn){
+    var on=document.getElementById(idOn), off=document.getElementById(idOff);
+    on.addEventListener('click',function(){ state[prop]=valOn; on.setAttribute('aria-pressed','true'); off.setAttribute('aria-pressed','false'); recompute(); });
+    off.addEventListener('click',function(){ state[prop]=!valOn; off.setAttribute('aria-pressed','true'); on.setAttribute('aria-pressed','false'); recompute(); });
+  }
+  // air/oxygen
+  document.getElementById('air').addEventListener('click',function(){ state.oxy=false; this.setAttribute('aria-pressed','true'); document.getElementById('oxy').setAttribute('aria-pressed','false'); recompute(); });
+  document.getElementById('oxy').addEventListener('click',function(){ state.oxy=true; this.setAttribute('aria-pressed','true'); document.getElementById('air').setAttribute('aria-pressed','false'); recompute(); });
+  // ACVPU
+  document.getElementById('acvpuA').addEventListener('click',function(){ state.alert=true; this.setAttribute('aria-pressed','true'); document.getElementById('acvpuX').setAttribute('aria-pressed','false'); recompute(); });
+  document.getElementById('acvpuX').addEventListener('click',function(){ state.alert=false; this.setAttribute('aria-pressed','true'); document.getElementById('acvpuA').setAttribute('aria-pressed','false'); recompute(); });
+
+  // scale toggle
+  function setScaleUI(){
+    document.getElementById('spo2-u').textContent = 'SpO₂ % · Scale '+(state.scale2?'2':'1');
+    document.getElementById('scaleLabel').textContent = state.scale2 ? 'SpO₂ scoring · Scale 2 (hypercapnic resp. failure, target 88–92%)' : 'SpO₂ scoring · Scale 1 (default)';
+    document.getElementById('calcNote').textContent = state.scale2
+      ? 'Scale 2 active: 88–92% is the target (scores 0). High saturations on oxygen are penalised (≥97% on O₂ → 3). Use only on clinical direction.'
+      : 'Scale 2 is for confirmed hypercapnic respiratory failure only (e.g. some COPD), target SpO₂ 88–92%, and only on clinical direction.';
+  }
+  document.getElementById('scale1').addEventListener('click',function(){ state.scale2=false; this.setAttribute('aria-pressed','true'); document.getElementById('scale2').setAttribute('aria-pressed','false'); setScaleUI(); recompute(); });
+  document.getElementById('scale2').addEventListener('click',function(){ state.scale2=true; this.setAttribute('aria-pressed','true'); document.getElementById('scale1').setAttribute('aria-pressed','false'); setScaleUI(); recompute(); });
+
+  // presets
+  function applyState(s){
+    Object.assign(state,s);
+    document.getElementById('rr').value=state.rr;
+    document.getElementById('spo2').value=state.spo2;
+    document.getElementById('sbp').value=state.sbp;
+    document.getElementById('pulse').value=state.pulse;
+    document.getElementById('temp').value=state.temp;
+    document.getElementById('air').setAttribute('aria-pressed', state.oxy?'false':'true');
+    document.getElementById('oxy').setAttribute('aria-pressed', state.oxy?'true':'false');
+    document.getElementById('acvpuA').setAttribute('aria-pressed', state.alert?'true':'false');
+    document.getElementById('acvpuX').setAttribute('aria-pressed', state.alert?'false':'true');
+    document.getElementById('scale1').setAttribute('aria-pressed', state.scale2?'false':'true');
+    document.getElementById('scale2').setAttribute('aria-pressed', state.scale2?'true':'false');
+    setScaleUI(); recompute();
+  }
+  document.getElementById('presetWell').addEventListener('click',function(){
+    applyState({ rr:18, spo2:98, sbp:124, pulse:74, temp:36.8, oxy:false, alert:true, scale2:false });
+  });
+  document.getElementById('presetRCP').addEventListener('click',function(){
+    // RCP worked example: RR26(3) SpO2 95% scale1(1) O2 yes(2) SBP95(2) pulse109(1) new confusion(3) temp39(1) = 13
+    applyState({ rr:26, spo2:95, sbp:95, pulse:109, temp:39.0, oxy:true, alert:false, scale2:false });
+  });
+
+  setScaleUI();
+  recompute();
+
+  // ---- STYX context tabs ----
+  var ctxTabs = document.querySelectorAll('.ctx-tab');
+  var ctxPanels = document.querySelectorAll('.ctx-panel');
+  ctxTabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      var key = tab.getAttribute('data-ctx');
+      ctxTabs.forEach(function(t){ t.setAttribute('aria-pressed', t===tab ? 'true':'false'); });
+      ctxPanels.forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-panel')===key); });
+    });
+  });
+})();
+</script>
+</body>
+</html>
