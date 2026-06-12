@@ -1,4 +1,4 @@
-"""Carer view (HERMES) — the patient-safe, descriptive surface for families and carers.
+"""Patient Display (HERMES) — the patient-safe, descriptive surface for families and carers.
 
 LYR-1: a thin client. Every word comes from ``styx`` — the calm status and lay reason from
 ``styx.reach.carer`` (relabelling the *same* CALLIOPE attribution the clinician sees, faithfulness
@@ -16,7 +16,7 @@ from styx.synth import Archetype, build_cohort
 from styx.timeline import episode_timeline
 from styx.viz.carer import carer_timeline_figure
 
-st.set_page_config(page_title="Carer view", layout="wide")
+st.set_page_config(page_title="Patient Display", layout="wide")
 st.warning(
     "Demo mode: **replay of synthetic data** — no real patient data, not a live deployment.",
     icon="⚠️",
@@ -46,11 +46,12 @@ st.title(f"Patient {pid}")
 st.subheader(status.status)
 
 # --- the plain reason (same primary driver as the clinician view) ------------------------------
-st.markdown(f"**What's standing out:** {lay.headline}")
+st.markdown("##### What is standing out")
+st.markdown(lay.headline)
 
 # --- a calm view of the stay so far ------------------------------------------------------------
 st.plotly_chart(carer_timeline_figure(episode_timeline(ctx)), width="stretch")
-st.caption("The shaded bar is the stay so far, with where things are now at its right edge.")
+st.caption("The shaded bar shows the stay so far; the right-hand edge marks the current position.")
 
 # --- one safe action ---------------------------------------------------------------------------
 st.info(CARER_ACTION)

@@ -60,3 +60,11 @@ WARD_FLAG_BADGE: dict[str, str] = {
     "quietest": "green",
     "new_low_history": "violet",
 }
+
+# --- (6k) Ward-card urgency-tier badges — keyed by ``styx.cohort.watch_tier`` output. Same
+# principle: the tier *word* carries the meaning, the colour is a redundant cue only. ------------
+WATCH_TIER_BADGE: dict[str, str] = {
+    "review_now": "red",
+    "this_hour": "orange",
+    "watch": "gray",
+}

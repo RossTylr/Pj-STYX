@@ -4,7 +4,9 @@ Drives the whole path: ward board at the silent-window frame → patient-0 surfa
 → drill into the patient page at the *same* clock t → all ten features {F5,F1,F2,F4,F7,F3,F8,F6,F9,
 F10} render → scrub forward and patient-0 climbs the board while AEGIS→forecast→threshold fire in
 order. Logic claims are asserted compute-side (``ward_frame`` / ``fire_times``); the Streamlit pages
-are driven via ``AppTest`` only for render-without-exception and feature *presence*.
+are driven via ``AppTest`` only for render-without-exception and feature *presence*. F10's evidence
+is the retrieval itself (``echo_neighbours``) — its figure left the ward page at 6k but the builder
+is retained and scanned (tests/test_no_codename.py), same pattern as ``trajectory_figure``.
 """
 
 from streamlit.testing.v1 import AppTest
@@ -12,7 +14,7 @@ from streamlit.testing.v1 import AppTest
 from styx.anticipation import fire_times
 from styx.cohort import build_cohort_context, ward_frame
 from styx.cohort.echo import echo_neighbours
-from styx.explain import DISPLAY_NAMES
+from styx.explain import DISPLAY_NAMES, WARD_LABEL_PRESETS
 from styx.synth import build_cohort
 
 _WARD = "app/pages/02_ward.py"
@@ -32,8 +34,11 @@ def test_ward_renders_and_patient0_is_on_the_watchlist() -> None:
     assert p0.status == "escalating" and p0.eta_soonest_min is not None  # banded ETA, no hard minute
     at = AppTest.from_file(_WARD, default_timeout=90).run()
     assert not at.exception
-    assert len(at.get("dataframe")) >= 1  # F6 — the triage board
-    assert len(at.get("plotly_chart")) >= 1  # F10 — the ECHO figure
+    # 6k: the board is the ward-grouped card deck — no table, no chart on this page.
+    assert len(at.get("dataframe")) == 0 and len(at.get("plotly_chart")) == 0
+    blob = " ".join(md.value for md in at.markdown)
+    assert all(label in blob for label in WARD_LABEL_PRESETS["nhs_hah"])  # F6 — the three boxes
+    assert "patient 0" in blob  # the hero card renders
 
 
 def test_drill_carries_the_clock_into_the_patient_page() -> None:
@@ -63,14 +68,18 @@ def test_all_ten_features_present() -> None:
     assert any("Hindsight forecast" in cb.label for cb in pt.checkbox)  # F9 (6j: ghost → hindsight)
 
     at = AppTest.from_file(_WARD, default_timeout=90).run()
-    assert len(at.get("dataframe")) >= 1  # F6
-    assert len(at.get("plotly_chart")) >= 1  # F10
+    # F6 — the board is the 6k card deck: the three ward boxes render, no table, no chart.
+    blob = " ".join(md.value for md in at.markdown)
+    assert all(label in blob for label in WARD_LABEL_PRESETS["nhs_hah"])
+    assert len(at.get("dataframe")) == 0 and len(at.get("plotly_chart")) == 0
     # F10 retrieval sanity: ECHO returns k look-alikes for patient 0, none of them itself.
     ns = echo_neighbours(_cctx(), 0, 150)
     assert len(ns) == 3 and all(n.pid != 0 for n in ns)
 
 
 def test_scrub_forward_climbs_the_board_in_anticipation_order() -> None:
+    # Compute-side rank semantics — unchanged by 6k: ward_frame order still drives card order
+    # within each ward box (the tier partition preserves it).
     cctx = _cctx()
     rank_default = [r.pid for r in ward_frame(cctx, cctx.default_idx)].index(0)
     fwd = ward_frame(cctx, _FWD_IDX)

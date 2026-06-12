@@ -77,11 +77,14 @@ DISPLAY_NAMES: dict[str, str] = {
 #: to one phrase would make the lay headline ambiguous about which driver it names (HERMES faithfulness,
 #: enforced by tests/test_reach_carer.py). Honesty-/register-linted as copy.
 CARER_NAMES: dict[str, str] = {
-    "oxygenation proximity": "oxygen levels drifting toward where the team would step in",
-    "effort proximity": "breathing working harder, heading toward where the team would step in",
-    "per-vital exceedance": "one of the readings has moved outside its usual range",
-    "breathing–oxygen decoupling": "breathing and oxygen no longer moving together as they usually do",
-    "departure direction": "the numbers are drifting away from this person's own usual pattern",
+    "oxygenation proximity": "Oxygen levels are gradually moving toward the point where the care "
+                             "team would step in.",
+    "effort proximity": "Breathing is working harder, moving toward the point where the care team "
+                        "would step in.",
+    "per-vital exceedance": "One of the readings has moved outside its usual range.",
+    "breathing–oxygen decoupling": "Breathing and oxygen levels are no longer moving together as "
+                                   "they usually do.",
+    "departure direction": "The readings are drifting away from this person's own usual pattern.",
 }
 
 #: (R4b) HERMES carer-facing *status* phrases — the plain, calm, honest one-liner the carer page shows
@@ -91,17 +94,19 @@ CARER_NAMES: dict[str, str] = {
 #: monitored is not the same as being safe" is the page's honesty anchor, carried in CARER_ACTION). No
 #: raw score, no σ, no codename, no alarming clinical term. Honesty-/register-linted like CARER_NAMES.
 CARER_STATUS: dict[str, str] = {
-    "watching": "one thing is standing out, so the team is keeping a closer eye for now",
-    "steady": "no single thing is standing out right now — being monitored as usual",
-    "involved": "the care team is already involved and looking after this closely",
+    "watching": "One reading pattern is standing out, so the care team is keeping a closer watch "
+                "for now.",
+    "steady": "Nothing in particular is standing out at the moment — monitoring is continuing "
+              "as usual.",
+    "involved": "The care team is already involved and is looking after this closely.",
 }
 
 #: (R4b) HERMES carer-facing safe action — one calm contact / what-to-watch line. In scope: it points
 #: to the care team and to plain observation, never a clinical instruction (no dose, no escalation, no
 #: "call 999"). Carries the lay scope/honesty anchor: being watched is not the same as being safe.
 CARER_ACTION: str = (
-    "if anything about how they seem changes — or you're simply worried — speak to the care team. "
-    "being monitored is not the same as being safe, so trust what you notice."
+    "If anything about how they seem changes — or you are simply concerned — please contact the "
+    "care team. Being monitored is not the same as being safe; trust what you notice."
 )
 
 #: (R4b) HERMES carer-facing footer — the brand-free provenance line for the family surface. The
@@ -179,11 +184,12 @@ EXPLAINERS: dict[str, Explainer] = {
             "single time, so it can't imply false precision. (Synthetic replay.)",
     ),
     "ward_board": Explainer(
-        what="Every patient, ranked by how soon they're forecast to need escalation.",
-        how="It re-scores the whole cohort at the current time and sorts by forecast time-to-"
-            "threshold, pulling the silent-but-rising patients into a watchlist.",
+        what="Every patient as a card, grouped into three wards, most urgent first within each.",
+        how="It re-scores the whole cohort at the current time and orders each ward's cards by "
+            "forecast time-to-threshold; the ward labels are a display setting over the same "
+            "cohort, never a new score.",
         why="Triage attention first to who needs it — including the quiet ones a threshold board "
-            "shows as green. (Synthetic replay.)",
+            "shows as green — without losing which ward a patient belongs to. (Synthetic replay.)",
     ),
     "watchlist": Explainer(
         what="Patients deteriorating within their normal range — the early flag has fired, no "
@@ -276,9 +282,9 @@ TRAJECTORY_MARKERS: dict[str, str] = {
 #: moment if it has already been reached — so every phrase is past/present tense and carries no
 #: projection, no threshold, no escalation. Honesty-/register-linted as copy.
 CARER_TIMELINE_NAMES: dict[str, str] = {
-    "monitored": "being monitored",
-    "now": "now",
-    "aegis": "the team began watching more closely here",
+    "monitored": "Being monitored",
+    "now": "Now",
+    "aegis": "The care team began watching more closely here",
 }
 
 #: (R1) The two care-history strata for the hazard panel — the single source for ``KMCurve.label``
@@ -318,6 +324,21 @@ WATCH_TIER_CRITERIA: dict[str, str] = {
     "review_now": "escalation projected within 30 min",
     "this_hour": "early-warning flag fired and escalation projected within the hour",
     "watch": "early-warning flag fired; no escalation projected within the hour",
+}
+
+#: (6k) Ward-label presets — the board's setting selector, one display name per preset id.
+#: Dict order is the selector order; the first entry (NHS hospital-at-home) is the default.
+WARD_PRESET_NAMES: dict[str, str] = {
+    "nhs_hah": "NHS hospital-at-home",
+    "role3": "Role 3 field hospital",
+}
+
+#: (6k) Ward display labels per preset — one label per ward index (``styx.cohort.ward_of``).
+#: A display preset over the same synthetic cohort: an illustrative fixed mapping, never a
+#: patient attribute and never re-scored — flipping presets relabels the boxes, nothing else.
+WARD_LABEL_PRESETS: dict[str, tuple[str, str, str]] = {
+    "nhs_hah": ("Respiratory", "Frailty", "Heart failure"),
+    "role3": ("Post-ITU step-down", "Surgical", "Medical"),
 }
 
 #: (6c) Obs-age stamp — the honest provenance of a score (which observation it was scored on).

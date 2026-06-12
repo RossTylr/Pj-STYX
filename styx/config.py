@@ -72,6 +72,10 @@ CHANNELS: tuple[str, ...] = (
 #: gates the R1b panel; defined here so the reach is flagged from birth.
 REACH_HISTORY: bool = True  # R1 — descriptive hazard stratification (no predictive-lift claim)
 
+#: (6k) Ward boxes on the board — a presentation-layer grouping over pids, NOT a cohort attribute
+#: (the synthetic cohort carries no ward field; ``styx.cohort.ward_of`` derives the index).
+WARD_COUNT: int = 3
+
 
 @dataclass(frozen=True)
 class VitalRange:

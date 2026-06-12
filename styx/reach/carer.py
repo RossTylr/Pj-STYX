@@ -26,7 +26,7 @@ from styx.rationale.calliope import _STABLE_EPS
 
 #: Lay headline when no single factor dominates the risk (CALLIOPE's stable template) — calm, not
 #: an "all clear" (the scope line already says no alert ≠ safe).
-STABLE_HEADLINE: str = "no single thing is standing out right now"
+STABLE_HEADLINE: str = "Nothing in particular is standing out at the moment."
 
 
 @dataclass(frozen=True)

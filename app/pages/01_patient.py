@@ -77,7 +77,11 @@ explain_all = st.sidebar.toggle("Explain this page", value=False,
 patient, ctx = _context(pid)
 
 # Replay clock: land on the silent window; reset when the patient changes.
+# Re-assigning the key each run promotes it from widget-owned to session-owned, so the clock
+# survives a page switch (Streamlit drops a widget-owned key whose widget did not render) —
+# this is what lets a ward-board drill land here at the same t.
 default_pos = ctx.indices.index(ctx.default_idx)
+st.session_state["scrub_pos"] = st.session_state.get("scrub_pos", default_pos)
 if st.session_state.get("scrub_pid") != pid:
     st.session_state["scrub_pid"] = pid
     st.session_state["scrub_pos"] = default_pos

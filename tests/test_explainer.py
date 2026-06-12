@@ -24,6 +24,8 @@ from styx.explain import (
     SCORE_CAPTION,
     TIMELINE_LABELS,
     TRAJECTORY_MARKERS,
+    WARD_LABEL_PRESETS,
+    WARD_PRESET_NAMES,
     WATCH_TIER_CRITERIA,
     WATCH_TIER_LABELS,
 )
@@ -92,6 +94,8 @@ def test_no_codename_in_copy() -> None:
         + list(WATCH_TIER_LABELS.values())  # (6e) watchlist urgency-tier labels — plain copy
         + list(WATCH_TIER_CRITERIA.values())  # (6e) tier criteria captions — plain copy
         + list(COMPARISON_LABELS.values())  # (S7) NEWS2 A/B side-by-side labels — plain copy
+        + list(WARD_PRESET_NAMES.values())  # (6k) board setting presets — plain copy
+        + [s for labels in WARD_LABEL_PRESETS.values() for s in labels]  # (6k) ward labels
     )
     for text in values:
         hit = [c for c in _CODENAMES if re.search(rf"\b{c}\b", text, re.IGNORECASE)]

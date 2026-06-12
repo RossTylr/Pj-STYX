@@ -12,6 +12,7 @@ from styx.cohort.ranking import (
     ward_frame,
     watch_tier,
 )
+from styx.cohort.wards import ward_of
 
 __all__ = [
     "WATCH_TIERS",
@@ -20,5 +21,6 @@ __all__ = [
     "build_cohort_context",
     "eta_band",
     "ward_frame",
+    "ward_of",
     "watch_tier",
 ]

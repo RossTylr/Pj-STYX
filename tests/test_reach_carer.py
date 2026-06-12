@@ -238,7 +238,7 @@ def test_carer_page_safe_register() -> None:
     # Drive the real carer page and scan every text element it renders — the softest register: no
     # alarming/clinical term and no codename *including the product name* (the carer footer is the
     # brand-free CARER_FOOTER; STYX is softened off the family surface — plan-review decision).
-    at = AppTest.from_file("app/pages/03_carer.py", default_timeout=90)
+    at = AppTest.from_file("app/pages/03_patient_display.py", default_timeout=90)
     at.session_state["patient_pick"] = 0
     at.run()
     assert not at.exception

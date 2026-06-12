@@ -1,37 +1,34 @@
-"""Ward board (STYX cohort triage) — F6 risk-ranked board + F10 ECHO, on the shared replay clock.
+"""Ward board (STYX cohort triage) — the F6 risk-ranked board on the shared replay clock.
 
-LYR-1: a thin client. Every row comes from ``styx.cohort`` (one ``ward_frame`` per scrub); the ECHO
-figure from a ``styx.viz`` pure builder; every explainer line from ``styx.explain``. This page only
-arranges, toggles disclosure, and renders — it computes nothing. The clock is the *same* one the
-patient page scrubs (shared ``scrub_pos``), so a click drills straight through at the same moment.
+LYR-1: a thin client. Every row comes from ``styx.cohort`` (one ``ward_frame`` per scrub); every
+explainer line from ``styx.explain``. This page only arranges, toggles disclosure, and renders —
+it computes nothing. The clock is the *same* one the patient page scrubs (shared ``scrub_pos``),
+so a click drills straight through at the same moment.
 """
 
 import streamlit as st
 
-from styx.cohort import WATCH_TIERS, build_cohort_context, ward_frame, watch_tier
-from styx.cohort.echo import echo_neighbours
+from styx.cohort import WATCH_TIERS, build_cohort_context, ward_frame, ward_of, watch_tier
+from styx.config import WARD_COUNT
 from styx.explain import (
     ARCHETYPE_PATTERNS,
-    DISPLAY_NAMES,
     ETA_BANDS,
     EXPLAINERS,
     OBS_AGE_TEMPLATE,
+    WARD_LABEL_PRESETS,
+    WARD_PRESET_NAMES,
     WATCH_TIER_CRITERIA,
     WATCH_TIER_LABELS,
 )
 from styx.readouts import eta_ordinal, footer_text, sim_clock, styx_index
-from styx.synth import build_cohort
+from styx.synth import Archetype, build_cohort
 from styx.viz import palette as pal
-from styx.viz.echo import echo_figure
 
 st.set_page_config(page_title="STYX — ward", layout="wide")
 st.warning(
     "Demo mode: **replay of synthetic data** — no real patient data, not a live deployment.",
     icon="⚠️",
 )
-
-TOP_N = 5  # focus mode keeps the watchlist + this many of the soonest-to-escalate
-
 
 @st.cache_resource
 def _cctx():
@@ -41,17 +38,22 @@ def _cctx():
 cctx = _cctx()
 
 # --- shared replay clock (same key the patient page scrubs) ------------------------------------
+# Re-assigning the key each run promotes it from widget-owned to session-owned, so the clock
+# survives a page switch (Streamlit drops a widget-owned key whose widget did not render).
 default_pos = cctx.indices.index(cctx.default_idx)
-if "scrub_pos" not in st.session_state:
-    st.session_state["scrub_pos"] = default_pos
+st.session_state["scrub_pos"] = st.session_state.get("scrub_pos", default_pos)
 
 st.sidebar.markdown("**Replay clock**")
 if st.sidebar.button("Silent window", help="the cohort's silent-window frame"):
     st.session_state["scrub_pos"] = default_pos
-focus_mode = st.sidebar.toggle("Focus mode", value=False,
-                               help="Collapse to the watchlist + the soonest-to-escalate.")
 explain_all = st.sidebar.toggle("Explain this page", value=False,
                                 help="Show a plain what / how / why under every panel.")
+# (6k) Setting preset — relabels the three ward boxes only; nothing is re-scored. Dict order
+# makes the first preset (NHS hospital-at-home) the default without fighting session state.
+preset = st.sidebar.selectbox("Ward labels", list(WARD_PRESET_NAMES), key="ward_preset",
+                              format_func=WARD_PRESET_NAMES.__getitem__,
+                              help="Deployment setting — changes the box labels, never the data.")
+ward_labels = WARD_LABEL_PRESETS[preset]
 
 
 def _clock_label(i: int) -> str:
@@ -107,18 +109,15 @@ def _flag_badges(r) -> str:
     )
 
 
-def _flag_text(r) -> str:
-    """Plain-text flags for the dataframe (which renders cells as text, not markdown)."""
-    return " · ".join(label for _, label in _active_flags(r))
-
-
 def _drill(r) -> None:
     """Click-through → the patient page at the SAME clock t. Setting scrub_pid to the target first
-    means the patient page's reset branch (``scrub_pid != pid``) does not fire — t is carried."""
+    means the patient page's reset branch (``scrub_pid != pid``) does not fire — t is carried.
+    ``scrub_pos`` is never assigned here: the session-owned promotion at the top of each page
+    carries the clock across the switch, and writing a widget key after the widget is
+    instantiated raises (StreamlitAPIException)."""
     if st.button(f"Open patient {r.pid} →", key=f"open_{r.pid}"):
         st.session_state["patient_pick"] = r.pid  # drive the patient page's selectbox
         st.session_state["scrub_pid"] = r.pid  # match → its reset branch is skipped
-        st.session_state["scrub_pos"] = pos
         st.switch_page("pages/01_patient.py")
 
 
@@ -126,54 +125,36 @@ st.title("Ward board")
 st.caption(f"Cohort {OBS_AGE_TEMPLATE.format(clock=sim_clock(cctx.t_min[now_idx]))} · "
            f"{len(rows)} patients")
 
-# --- watchlist: the silent-but-rising patients a threshold board would show green --------------
-# (6e) Grouped into urgency tiers so the nurse triages a short list, not a wall. Rows keep the
-# ward_frame order (already soonest-first), so tier groups simply partition the existing sort.
-watch = [r for r in rows if r.silent_but_rising]
-tiers = {t: [r for r in watch if watch_tier(r) == t] for t in WATCH_TIERS}
-_header(f"Watchlist — silent but rising ({len(watch)})", "watchlist")
-st.caption(" · ".join(f"{WATCH_TIER_LABELS[t]}: {len(tiers[t])}" for t in WATCH_TIERS))
-if not watch:
-    st.caption("No silent risers at this frame.")
-budget = TOP_N if focus_mode else len(watch)  # focus keeps the most urgent rows overall
-for t in WATCH_TIERS:
-    st.markdown(f"**{WATCH_TIER_LABELS[t]} ({len(tiers[t])})**")
-    st.caption(WATCH_TIER_CRITERIA[t])
-    shown = tiers[t][:max(0, budget)]
-    budget -= len(shown)
-    for r in shown:
-        c1, c2, c3, c4 = st.columns([2, 3, 4, 3])
-        c1.markdown(f"**patient {r.pid}**")
-        c2.markdown(f"Pattern: {ARCHETYPE_PATTERNS[r.archetype]}")
-        c3.markdown(f"STYX {styx_index(r.risk_now)} · ETA {_eta_label(r)}  \n{_flag_badges(r)}")
-        with c4:
+# --- (6k) cards by ward: three boxes, most urgent first within each — the deck IS the board ----
+# (6e) urgency-within: rows keep the ward_frame order (already soonest-first), so the per-tier
+# partition inside each box preserves the existing sort — tier groups it, the rank orders it.
+_header("Wards — most urgent first", "ward_board")
+st.caption(" · ".join(f"{WATCH_TIER_LABELS[t]} — {WATCH_TIER_CRITERIA[t]}" for t in WATCH_TIERS))
+hero_pid = cctx.cohort.silent_case().pid  # the demo's silent case — its card carries a border
+
+
+def _card(r, tier: str) -> None:
+    """One patient card: tier badge, pattern, score/ETA/flags (+ drill-through for escalators)."""
+    with st.container(border=(r.pid == hero_pid)):
+        st.markdown(f"**patient {r.pid}** "
+                    f":{pal.WATCH_TIER_BADGE[tier]}-background[{WATCH_TIER_LABELS[tier]}]")
+        st.caption(f"Pattern: {ARCHETYPE_PATTERNS[r.archetype]}")
+        st.markdown(f"STYX {styx_index(r.risk_now)} · ETA {_eta_label(r)}  \n{_flag_badges(r)}")
+        if r.archetype != Archetype.STABLE.value:  # the patient page lists escalators only
             _drill(r)
 
-# --- the full triage board (ranked by soonest-to-escalate) ------------------------------------
-at_risk = [r for r in rows if r.status in ("escalated", "escalating")]
-board = (at_risk[:TOP_N] if focus_mode else rows)
-_header("Triage board — ranked by time-to-escalation", "ward_board")
-st.caption("Focus mode hides the stable bulk." if focus_mode
-           else "Ranked: over-the-line → escalating (soonest ETA) → no forecast.")
-st.dataframe(
-    {
-        "patient": [r.pid for r in board],
-        "pattern": [ARCHETYPE_PATTERNS[r.archetype] for r in board],
-        "status": [r.status for r in board],
-        "STYX": [styx_index(r.risk_now) for r in board],
-        "time-to-escalation": [_eta_label(r) for r in board],
-        "flags": [_flag_text(r) for r in board],
-    },
-    width="stretch", hide_index=True,
-)
 
-# --- ECHO: similar past trajectories for a chosen patient (grounding, not a forecast) ----------
-_header(DISPLAY_NAMES["echo"], "echo")
-focus_pid = st.selectbox("Focus patient", [r.pid for r in at_risk] or [r.pid for r in rows],
-                         format_func=lambda i: f"patient {i}")
-neighbours = echo_neighbours(cctx, focus_pid, now_idx)
-st.caption("Nearest synthetic trajectories by shape · "
-           + " · ".join(f"patient {n.pid} ({n.outcome})" for n in neighbours))
-st.plotly_chart(echo_figure(cctx, focus_pid, neighbours, now_idx), width="stretch")
+for w, col in enumerate(st.columns(WARD_COUNT)):
+    box = [r for r in rows if ward_of(r.pid) == w]
+    tiers = {t: [r for r in box if watch_tier(r) == t] for t in WATCH_TIERS}
+    with col, st.container(border=True):
+        st.markdown(f"#### {ward_labels[w]}")
+        st.caption(f"{len(box)} patients · {len(tiers['review_now'])} review now")
+        for t in ("review_now", "this_hour"):
+            for r in tiers[t]:
+                _card(r, t)
+        with st.expander(f"+ {len(tiers['watch'])} watching"):
+            for r in tiers["watch"]:
+                _card(r, "watch")
 
 st.caption(footer_text())
