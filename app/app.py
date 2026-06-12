@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+from styx.clinical_basis import NEWS2_FOOTNOTE
 from styx.explain import SCOPE_LINE
 from styx.readouts import footer_text
 
@@ -24,3 +25,4 @@ st.info("Open the **Ward** board in the sidebar for cohort triage (rank by time-
         "integrated single-patient **Patient** view at the same moment.")
 
 st.caption(footer_text())
+st.page_link("pages/04_clinical_basis.py", label=NEWS2_FOOTNOTE)

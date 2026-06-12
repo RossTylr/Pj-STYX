@@ -2,3 +2,8 @@
 # (Hard Rule 7: the demo is replay-of-synthetic; never imply a live or streaming deployment).
 [client]
 toolbarMode = "minimal"
+
+# Pin light mode — the warm risk ramp and the clinical-basis scoring table are designed against
+# a white NEWS2-point-0 stop; dark mode would invert the "white = no points" reading.
+[theme]
+base = "light"

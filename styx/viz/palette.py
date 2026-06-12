@@ -40,6 +40,11 @@ WARM_RAMP: tuple[str, ...] = (
     "#FFFFFF", "#FBEFE7", "#F7D9C6", "#F1BE9F", "#E79C74", "#D9764A", "#C4532D",
 )
 
+# --- Table inks for warm-ramp-shaded cells (clinical-basis scoring table): near-black on the
+# pale stops, warm off-white once the deep-terracotta stop drops below readable contrast. --------
+TABLE_INK = "#1A1A1A"
+TABLE_INK_ON_DEEP = "#FFF4ED"
+
 # --- Theograph care-event channels (fixed order; one distinguishable swatch each) --------------
 CHANNELS: dict[str, str] = {
     "primary_care": BLUISH_GREEN,

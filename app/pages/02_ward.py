@@ -8,6 +8,7 @@ so a click drills straight through at the same moment.
 
 import streamlit as st
 
+from styx.clinical_basis import NEWS2_FOOTNOTE
 from styx.cohort import WATCH_TIERS, build_cohort_context, ward_frame, ward_of, watch_tier
 from styx.config import WARD_COUNT
 from styx.explain import (
@@ -158,3 +159,9 @@ for w, col in enumerate(st.columns(WARD_COUNT)):
                 _card(r, "watch")
 
 st.caption(footer_text())
+try:
+    st.page_link("pages/04_clinical_basis.py", label=NEWS2_FOOTNOTE)
+except KeyError:
+    # Single-file AppTest registry has no sibling pages (same limitation test_ward_boxes notes
+    # for st.switch_page) — fall back to the same line as plain text.
+    st.caption(NEWS2_FOOTNOTE)

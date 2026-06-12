@@ -7,6 +7,7 @@ arranges, toggles disclosure, and renders — it computes nothing.
 
 import streamlit as st
 
+from styx.clinical_basis import NEWS2_FOOTNOTE
 from styx.config import THRESHOLDS, VITALS
 from styx.explain import (
     ARCHETYPE_PATTERNS,
@@ -238,3 +239,9 @@ with st.expander("Raw vitals (SIG-1)"):
     st.line_chart({v: patient.vitals[v] for v in VITALS})
 
 st.caption(footer_text())
+try:
+    st.page_link("pages/04_clinical_basis.py", label=NEWS2_FOOTNOTE)
+except KeyError:
+    # Single-file AppTest registry has no sibling pages (same limitation test_ward_boxes notes
+    # for st.switch_page) — fall back to the same line as plain text.
+    st.caption(NEWS2_FOOTNOTE)
