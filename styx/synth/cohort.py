@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from styx.config import CHANNELS, RESCORE_CADENCE_MIN, SEED, VITALS
+from styx.synth.observations import generate_nurse_obs
 from styx.synth.scenario import Archetype, generate_episode, time_grid
 
 #: Per-channel baseline event rate + frailty loading (events ~ Poisson(base + load·frailty)).
@@ -60,6 +61,7 @@ class Patient:
     outcome: Outcome
     archetype: Archetype  # the deterioration shape (STABLE for recovered)
     t_min: np.ndarray  # shared sim-minute time grid
+    nurse_obs: dict[str, np.ndarray]  # NEWS2-comparator-only (systolic_bp, acvpu) — NOT in VITALS
 
 
 @dataclass(frozen=True)
@@ -88,6 +90,8 @@ class Cohort:
             if any(a.theograph[c] != b.theograph[c] for c in CHANNELS):
                 return False
             if any(not np.array_equal(a.vitals[v], b.vitals[v]) for v in VITALS):
+                return False
+            if any(not np.array_equal(a.nurse_obs[k], b.nurse_obs[k]) for k in a.nurse_obs):
                 return False
         return True
 
@@ -120,9 +124,10 @@ def build_cohort(seed: int = SEED, n_patients: int = 50) -> Cohort:
         outcome = Outcome.RECOVERED if archetype is Archetype.STABLE else Outcome.ESCALATED
         theograph = _theograph(child, frailty)
         vitals = generate_episode(child, archetype=archetype)
-        # Trailing draw (after the episode) so adding it cannot shift patient 0's vital stream.
+        # Trailing draws (after the episode) so adding them cannot shift patient 0's vital stream.
         comorbidity = float(sum(theograph.values()) + child.normal(0.0, _COMORBIDITY_NOISE))
+        nurse_obs = generate_nurse_obs(grid, child)  # comparator-only; drawn last (DET-1 safe)
         patients.append(
-            Patient(pid, frailty, theograph, comorbidity, vitals, outcome, archetype, grid)
+            Patient(pid, frailty, theograph, comorbidity, vitals, outcome, archetype, grid, nurse_obs)
         )
     return Cohort(tuple(patients), dt_min=int(grid[1] - grid[0]))

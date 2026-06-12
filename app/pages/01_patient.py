@@ -14,7 +14,7 @@ from styx.explain import (
     COMPARISON_LABELS,
     DISPLAY_NAMES,
     EXPLAINERS,
-    NEWS2_PARTIAL_LABEL,
+    NEWS2_COMPARATOR_LABEL,
     OBS_AGE_TEMPLATE,
     SCORE_CAPTION,
 )
@@ -23,7 +23,14 @@ from styx.cohort.echo import echo_neighbours
 from styx.frame import build_context, patient_frame
 from styx.reach.decoupling import decoupling_onset
 from styx.reach.history import stratify
-from styx.readouts import NEWS2_TRIGGER, footer_text, news2_crossing, news2_partial, sim_clock, styx_index
+from styx.readouts import (
+    NEWS2_TRIGGER,
+    footer_text,
+    news2_complete,
+    news2_complete_crossing,
+    sim_clock,
+    styx_index,
+)
 from styx.synth import Archetype, build_cohort
 from styx.timeline import episode_timeline
 from styx.viz.coherence import coherence_figure
@@ -149,7 +156,7 @@ try:
     _decoupling_min = decoupling_onset(patient).onset_min
 except ValueError:
     _decoupling_min = None  # not every escalator carries a decoupling onset
-_news2_min = news2_crossing(patient)  # bound once; the hero and the A/B share it
+_news2_min = news2_complete_crossing(patient)  # bound once; the hero and the A/B share it
 st.plotly_chart(
     clinical_trajectory_figure(
         patient, decoupling_min=_decoupling_min, aegis_min=ctx.fire.aegis_min,
@@ -162,7 +169,7 @@ st.plotly_chart(
 # --- episode timeline (build-once strip; static, independent of the scrub) --------------------
 _header("Episode timeline", "timeline")
 st.plotly_chart(timeline_figure(episode_timeline(ctx)), width="stretch")
-st.caption(NEWS2_PARTIAL_LABEL)
+st.caption(NEWS2_COMPARATOR_LABEL)
 
 # --- anticipation: risk waterline, then forecast cone — stacked full width --------------------
 _header(DISPLAY_NAMES["waterline"], "waterline")
@@ -173,13 +180,13 @@ st.plotly_chart(waterline_figure(patient.t_min, ctx.risk, ctx.threshold, aegis_i
 _header(DISPLAY_NAMES["comparison"], "comparison")
 st.plotly_chart(
     comparison_figure(
-        patient.t_min, ctx.risk, ctx.threshold, news2_partial(patient), NEWS2_TRIGGER,
+        patient.t_min, ctx.risk, ctx.threshold, news2_complete(patient), NEWS2_TRIGGER,
         aegis_min=ctx.fire.aegis_min, escalation_min=ctx.fire.threshold_min,
         news2_crossing_min=_news2_min, now_idx=now_idx,
     ),
     width="stretch",
 )
-st.caption(f"{NEWS2_PARTIAL_LABEL}. {COMPARISON_LABELS['caption']}")
+st.caption(f"{NEWS2_COMPARATOR_LABEL}. {COMPARISON_LABELS['caption']}")
 
 # --- history-as-prior (R1): additive, full width below the waterline — the live signal is untouched
 _header(DISPLAY_NAMES["history"], "history")

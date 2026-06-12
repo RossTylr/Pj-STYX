@@ -51,6 +51,11 @@ G4_FAITHFULNESS_FLOOR: float = 0.90
 #: exceedance (S3), so it was inert dead-weight — confirmed by re-running G1/G2/G3 after the drop.
 VITALS: tuple[str, ...] = ("RR", "SpO2", "HR", "temp")
 
+#: Nurse-entered obs round in sim-minutes — the cadence at which a nurse records the two NEWS2 params
+#: a wearable cannot capture (systolic BP, ACVPU). These feed ONLY the NEWS2 comparator, never STYX's
+#: model, so they are deliberately NOT in VITALS (SIG-1 stays the four wearable streams).
+NURSE_OBS_CADENCE_MIN: int = 240
+
 #: F1 state-space axes — the named physiological constructs each 2-D latent axis must track.
 STATE_AXES: tuple[str, str] = ("oxygenation", "effort")
 

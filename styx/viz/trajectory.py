@@ -138,12 +138,17 @@ def _add_quadrants(fig: go.Figure) -> None:
 
 
 def _add_news2_boundary(fig: go.Figure) -> None:
-    """The one emphasised clinical line: the NEWS2 single-parameter red boundary (≥ 3 points)."""
+    """The one emphasised clinical line: where a single NEWS2 parameter (SpO₂ or RR) reds at score 3.
+
+    Worded as a single-parameter red, never an aggregate "≥ 3": this scenario's aggregate peaks at 3
+    and never reaches the ≥ 5 trigger, so the escalation *is* this single red — the label must not
+    read as an aggregate threshold a NEWS2-literate eye would expect to be crossed.
+    """
     line = dict(color=pal.THRESHOLD, width=1.9, dash="dash")
     fig.add_shape(type="line", x0=91, x1=91, y0=_RR_LO, y1=24.5, line=line)
     fig.add_shape(type="line", x0=91, x1=_SPO2_HI, y0=24.5, y1=24.5, line=line)
     fig.add_annotation(
-        x=91.3, y=23.0, text="NEWS2 escalation (≥ 3 points)", showarrow=False,
+        x=91.3, y=23.0, text="NEWS2 single-parameter red (score 3)", showarrow=False,
         font=dict(size=10, color=pal.THRESHOLD), xanchor="left", yanchor="top",
     )
 

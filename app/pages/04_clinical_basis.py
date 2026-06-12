@@ -18,10 +18,13 @@ from styx.clinical_basis import (
     GLOSSARY,
     INTENDED_USE,
     NO_ALERT_LINE,
+    NURSE_OBS_PROSE,
     OXYGEN_UPLIFT_LINE,
     PAGE_PURPOSE,
     RCP_ACKNOWLEDGEMENT,
     READS_PROSE,
+    TABLE_NURSE_COLUMNS,
+    TABLE_NURSE_ROWS,
     REFERENCES,
     RELATIONSHIP_LINE,
     SCALE2_CONSTRAINT,
@@ -85,6 +88,12 @@ st.table(scoring_table_styler())
 st.caption(f"{DERIVED_BADGE} Column headers are the NEWS2 point values.")
 st.markdown(f"*{TABLE_A_NOTE}*")
 _official_chart(CHARTS[0])
+
+# --- §3b What the nurse obs round adds to the comparator ---------------------------------------
+st.divider()
+st.markdown("### What the nurse obs round adds")
+st.markdown(NURSE_OBS_PROSE)
+_prose_table(TABLE_NURSE_COLUMNS, TABLE_NURSE_ROWS)
 
 # --- §4 What STYX cannot see -------------------------------------------------------------------
 st.divider()

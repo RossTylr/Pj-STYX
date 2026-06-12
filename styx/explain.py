@@ -344,21 +344,24 @@ WARD_LABEL_PRESETS: dict[str, tuple[str, str, str]] = {
 #: (6c) Obs-age stamp — the honest provenance of a score (which observation it was scored on).
 OBS_AGE_TEMPLATE: str = "scored on obs at {clock} (sim)"
 
-#: Label for the partial-NEWS2 comparator — honest about which 3 of 7 params are not modelled (and
-#: that they are normal in this scenario by construction, so the partial equals the full score here).
-NEWS2_PARTIAL_LABEL: str = (
-    "NEWS2 (partial, Scale 1; 4 of 7 — BP, consciousness, O₂ not modelled, normal in this scenario)"
+#: Label for the NEWS2 comparator — now a complete-but-for-O₂ score: the two params a wearable cannot
+#: capture (BP, consciousness) are supplied by the nurse obs round, so the comparator scores 6 of 7.
+#: Only the O₂-uplift flag is unscored (0 on room air here, so 6 of 7 ≈ full for this scenario). The
+#: lead holds even though the comparator is given BP and consciousness that STYX's own model never reads.
+NEWS2_COMPARATOR_LABEL: str = (
+    "NEWS2 (Scale 1, 6 of 7 — BP and consciousness from the nurse obs round; only the O₂-uplift "
+    "flag is unscored, 0 on room air here)"
 )
 
 #: (S7) NEWS2 A/B comparison-panel labels — the plain copy on the side-by-side face
 #: (``styx.viz.comparison.comparison_figure``). Fair-comparison guards live in this copy: the
-#: comparator lane is the *partial* NEWS2 (4 of 7 — single source ``styx.readouts.news2_partial``,
+#: comparator lane is the *complete* NEWS2 (6 of 7 — single source ``styx.readouts.news2_complete``,
 #: never re-scored), and the lead is the early-warning-vs-NEWS2 gap, scoped to this presentation —
 #: never a universal claim over NEWS2. Honesty-/register-linted as copy alongside the cards.
 COMPARISON_LABELS: dict[str, str] = {
     "title": "STYX vs NEWS2 — the same stay, scored two ways (synthetic replay)",
     "styx_lane": "STYX risk",
-    "news2_lane": "partial NEWS2 (Scale 1, 4 of 7)",
+    "news2_lane": "NEWS2 (Scale 1, 6 of 7)",
     "threshold": "escalation threshold",
     "trigger": "NEWS2 trigger (≥ 5, or any parameter at 3)",
     "early_warning": "early warning",
@@ -367,9 +370,10 @@ COMPARISON_LABELS: dict[str, str] = {
     "lead": "early warning leads NEWS2 by ≈{hours:.0f} h ({minutes:.0f} min) on this presentation",
     "xaxis": "time (sim-minutes)",
     "yaxis_risk": "risk",
-    "yaxis_news2": "partial NEWS2",
-    "caption": "Same stay, one clock: STYX risk above, partial NEWS2 below, each against its own "
-               "escalation line. On this silent-hypoxia presentation the early warning lands hours "
-               "before NEWS2 first triggers — a synthetic replay of one scenario, not a general "
-               "claim about NEWS2.",
+    "yaxis_news2": "NEWS2 (6 of 7)",
+    "caption": "Same stay, one clock: STYX risk above, NEWS2 below, each against its own escalation "
+               "line. The NEWS2 lane scores six of seven params — the wearable streams plus the "
+               "nurse-recorded blood pressure and consciousness STYX's own model never reads. On "
+               "this silent-hypoxia presentation the early warning still lands hours before NEWS2 "
+               "first triggers — a synthetic replay of one scenario, not a general claim about NEWS2.",
 }

@@ -19,7 +19,7 @@ from styx.explain import (
     ETA_BANDS,
     EXPLAINERS,
     KM_STRATUM_LABELS,
-    NEWS2_PARTIAL_LABEL,
+    NEWS2_COMPARATOR_LABEL,
     SCOPE_LINE,
     SCORE_CAPTION,
     TIMELINE_LABELS,
@@ -106,12 +106,13 @@ def test_no_codename_in_copy() -> None:
 
 
 def test_score_caption_and_news2_label_honest() -> None:
-    # (6f) The index caption must warn it is not NEWS2; the comparator label must flag its partiality.
+    # (6f) The index caption must warn it is not NEWS2; the comparator label must state its scope —
+    # 6 of 7 (BP + consciousness from the nurse round), naming the one param still unscored.
     assert "not NEWS2" in SCORE_CAPTION
-    low = NEWS2_PARTIAL_LABEL.lower()
-    assert "partial" in low and "scale 1" in low and "4 of 7" in low
-    for missing in ("bp", "consciousness", "o₂"):  # the 3 of 7 params not modelled, named
-        assert missing in low
+    low = NEWS2_COMPARATOR_LABEL.lower()
+    assert "6 of 7" in low and "scale 1" in low and "nurse" in low
+    for named in ("bp", "consciousness", "o₂"):  # the two now scored + the one still unscored
+        assert named in low
 
 
 def test_scope_line_states_blind_spots() -> None:

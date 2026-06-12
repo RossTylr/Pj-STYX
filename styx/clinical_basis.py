@@ -75,27 +75,46 @@ TABLE_A_NOTE: str = (
     "the warm risk shading is the summed NEWS2 sub-score for those two parameters."
 )
 
-#: §4 — what STYX cannot see.
-CANNOT_SEE_PROSE: str = (
-    "The remaining NEWS2 parameters are outside SIG-1. STYX is structurally blind to them — "
-    "they are not measured, not modelled and never inferred (Royal College of Physicians, 2017)."
+#: §3b — the two NEWS2 params a wearable cannot capture, supplied to the comparator by the nurse.
+NURSE_OBS_PROSE: str = (
+    "Two NEWS2 parameters a wearable cannot stream — systolic blood pressure and consciousness "
+    "(ACVPU) — are entered by a nurse on the obs round and scored in the NEWS2 comparator, so the "
+    "side-by-side baseline is a complete NEWS2 but for the oxygen-supplementation flag. STYX's own "
+    "trajectory model still reads only the four wearable vitals: the comparator is handed two "
+    "parameters STYX never uses, and the early warning still leads it (Royal College of "
+    "Physicians, 2017)."
 )
 
-#: Table B — the parameters outside SIG-1 and why each matters (assets §A, verbatim).
-TABLE_B_COLUMNS: tuple[str, str, str] = (
-    "Parameter (not in SIG-1)", "NEWS2 scoring", "What STYX cannot detect",
+#: Table B′ — the nurse-entered params the comparator now scores (assets §A bands, verbatim).
+TABLE_NURSE_COLUMNS: tuple[str, str, str] = (
+    "Parameter (nurse-entered)", "NEWS2 scoring", "Recorded by",
 )
-TABLE_B_ROWS: tuple[tuple[str, str, str], ...] = (
+TABLE_NURSE_ROWS: tuple[tuple[str, str, str], ...] = (
     (
         "Systolic blood pressure (mmHg)",
         "≤90 (3) · 91–100 (2) · 101–110 (1) · 111–219 (0) · ≥220 (3)",
-        "Hypotensive deterioration — e.g. sepsis, haemorrhage, cardiogenic shock",
+        "Nurse obs round (4-hourly) — preserved in band 0 in this scenario",
     ),
     (
         "Consciousness (ACVPU)",
         "Alert (0) · new confusion / V / P / U (3)",
-        "New confusion or falling consciousness level",
+        "Nurse obs round (4-hourly) — Alert throughout in this scenario",
     ),
+)
+
+#: §4 — what STYX's own model still cannot see (the comparator's nurse obs do not feed it).
+CANNOT_SEE_PROSE: str = (
+    "STYX's trajectory model reads only the four wearable vitals; blood pressure and consciousness "
+    "are not read by it, not modelled and never inferred — they reach the comparator only through "
+    "the nurse obs round above. What no part of the picture scores is the oxygen-supplementation "
+    "flag and the Scale 2 alternative (Royal College of Physicians, 2017)."
+)
+
+#: Table B — the parameters that remain outside even the completed comparator, and why each matters.
+TABLE_B_COLUMNS: tuple[str, str, str] = (
+    "Parameter (still unscored)", "NEWS2 scoring", "What this means",
+)
+TABLE_B_ROWS: tuple[tuple[str, str, str], ...] = (
     (
         "SpO₂ — Scale 2 (target 88–92%)",
         "Separate scale for hypercapnic (type 2) respiratory failure",

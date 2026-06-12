@@ -19,8 +19,9 @@ from plotly.subplots import make_subplots
 from styx.explain import COMPARISON_LABELS
 from styx.viz import palette as pal
 
-#: NEWS2 lane y-range — the full Scale-1 aggregate range, never zoomed to flatter the flat line.
-_NEWS2_RANGE: tuple[float, float] = (0.0, 12.0)
+#: NEWS2 lane y-range — the full Scale-1 aggregate range for the 6 scored params (max 17), never
+#: zoomed to flatter the flat line.
+_NEWS2_RANGE: tuple[float, float] = (0.0, 20.0)
 
 
 def comparison_figure(
