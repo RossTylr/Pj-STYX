@@ -95,6 +95,7 @@ def _figure_builders() -> dict:
     from styx.reach.history import stratify
     from styx.viz.carer import carer_timeline_figure
     from styx.viz.coherence import coherence_figure
+    from styx.viz.comparison import comparison_figure
     from styx.viz.cone import cone_figure
     from styx.viz.echo import echo_figure
     from styx.viz.hazard import hazard_figure
@@ -102,7 +103,7 @@ def _figure_builders() -> dict:
     from styx.viz.timeline import timeline_figure
     from styx.viz.trajectory import clinical_trajectory_figure, trajectory_figure
     from styx.viz.waterline import waterline_figure
-    from styx.readouts import news2_crossing
+    from styx.readouts import NEWS2_TRIGGER, news2_crossing, news2_partial
 
     cohort = build_cohort(seed=42)
     patient = cohort.silent_case()
@@ -129,6 +130,10 @@ def _figure_builders() -> dict:
             patient.t_min, d.coherence, d.onset_min, aegis_min=ctx.fire.aegis_min),
         waterline_figure: lambda: waterline_figure(
             patient.t_min, ctx.risk, ctx.threshold, aegis_idx=ctx.aegis_idx),
+        comparison_figure: lambda: comparison_figure(
+            patient.t_min, ctx.risk, ctx.threshold, news2_partial(patient), NEWS2_TRIGGER,
+            aegis_min=ctx.fire.aegis_min, escalation_min=ctx.fire.threshold_min,
+            news2_crossing_min=news2_crossing(patient)),
         cone_figure: lambda: cone_figure(
             patient.t_min, ctx.risk, frame.cone, THRESHOLDS.risk_escalation,
             now_idx=ctx.default_idx, ghost=ctx.ghost),

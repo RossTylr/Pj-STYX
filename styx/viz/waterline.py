@@ -34,5 +34,6 @@ def waterline_figure(
         title=f"{DISPLAY_NAMES['waterline']} — rises early, crosses late",
         xaxis_title="sim-minutes", yaxis_title="risk", yaxis_range=[0, 1],
         height=420, showlegend=True,
+        legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="left", x=0),
     )
     return fig

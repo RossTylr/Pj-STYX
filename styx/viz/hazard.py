@@ -62,6 +62,7 @@ def hazard_figure(
         title=f"{DISPLAY_NAMES['history']} — denser recent care history reaches escalation sooner",
         xaxis_title="sim-minutes", yaxis_title="not yet escalated", yaxis_range=[0, 1],
         height=420, showlegend=True,
+        legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="left", x=0),
     )
     return fig
 

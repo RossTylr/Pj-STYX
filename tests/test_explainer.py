@@ -12,6 +12,7 @@ from styx.explain import (
     ARCHETYPE_PATTERNS,
     CARER_NAMES,
     COHERENCE_LABELS,
+    COMPARISON_LABELS,
     COMPONENTS,
     CONDITION,
     DISPLAY_NAMES,
@@ -90,6 +91,7 @@ def test_no_codename_in_copy() -> None:
         + list(TRAJECTORY_MARKERS.values())  # (6d) hero cascade-marker hover copy — plain copy
         + list(WATCH_TIER_LABELS.values())  # (6e) watchlist urgency-tier labels — plain copy
         + list(WATCH_TIER_CRITERIA.values())  # (6e) tier criteria captions — plain copy
+        + list(COMPARISON_LABELS.values())  # (S7) NEWS2 A/B side-by-side labels — plain copy
     )
     for text in values:
         hit = [c for c in _CODENAMES if re.search(rf"\b{c}\b", text, re.IGNORECASE)]

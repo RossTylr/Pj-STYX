@@ -46,7 +46,7 @@ class Explainer:
 COMPONENTS: tuple[str, ...] = (
     "trajectory", "waterline", "aegis", "cone", "ghost",
     "calliope", "sentinel", "theograph", "raw_vitals", "timeline",
-    "ward_board", "watchlist", "echo", "history", "caduceus",
+    "ward_board", "watchlist", "echo", "history", "caduceus", "comparison",
 )
 
 #: (S5.7) The single source for plain UK-clinical display labels — codenames live only in the code
@@ -64,6 +64,7 @@ DISPLAY_NAMES: dict[str, str] = {
     "trajectory": "Trajectory",
     "ghost": "Hindsight forecast",
     "history": "History-based risk",  # R1 history-as-prior hazard panel
+    "comparison": "STYX vs NEWS2, side by side",  # S7 A/B against the named standard
     "caduceus": "How the vital signs move together",  # reserved for R3
     "charon": "Projected care events",  # reserved for R2
 }
@@ -221,6 +222,18 @@ EXPLAINERS: dict[str, Explainer] = {
             "STYX still alerts at the early warning, the headline lead stays the early-warning-vs-"
             "NEWS2 gap (≈5 h), and it claims no extra accuracy. (Synthetic replay.)",
     ),
+    "comparison": Explainer(
+        what="The same stay scored two ways on one clock — the STYX risk above, the partial NEWS2 "
+             "(Scale 1) below, each against its own escalation line.",
+        how="No new maths: it re-draws the already-computed risk series and the same partial NEWS2 "
+            "the timeline uses (4 of 7 parameters — BP, consciousness and O₂ are not modelled, and "
+            "are normal in this scenario by construction). The bracket is the early-warning-vs-"
+            "NEWS2 gap.",
+        why="It makes the A/B visible: through the silent window the NEWS2 trace sits flat at 0–1 "
+            "while the risk rises — on this silent-hypoxia presentation the early warning lands "
+            "≈5 h before the UK standard first triggers. A result on this one scenario, not a "
+            "general claim about NEWS2. (Synthetic replay.)",
+    ),
 }
 
 #: Lay one-liners for the episode-timeline events — kept here so they're honesty-linted with the
@@ -315,3 +328,27 @@ OBS_AGE_TEMPLATE: str = "scored on obs at {clock} (sim)"
 NEWS2_PARTIAL_LABEL: str = (
     "NEWS2 (partial, Scale 1; 4 of 7 — BP, consciousness, O₂ not modelled, normal in this scenario)"
 )
+
+#: (S7) NEWS2 A/B comparison-panel labels — the plain copy on the side-by-side face
+#: (``styx.viz.comparison.comparison_figure``). Fair-comparison guards live in this copy: the
+#: comparator lane is the *partial* NEWS2 (4 of 7 — single source ``styx.readouts.news2_partial``,
+#: never re-scored), and the lead is the early-warning-vs-NEWS2 gap, scoped to this presentation —
+#: never a universal claim over NEWS2. Honesty-/register-linted as copy alongside the cards.
+COMPARISON_LABELS: dict[str, str] = {
+    "title": "STYX vs NEWS2 — the same stay, scored two ways (synthetic replay)",
+    "styx_lane": "STYX risk",
+    "news2_lane": "partial NEWS2 (Scale 1, 4 of 7)",
+    "threshold": "escalation threshold",
+    "trigger": "NEWS2 trigger (≥ 5, or any parameter at 3)",
+    "early_warning": "early warning",
+    "escalation": "escalation crossing",
+    "news2_fires": "NEWS2 first triggers",
+    "lead": "early warning leads NEWS2 by ≈{hours:.0f} h ({minutes:.0f} min) on this presentation",
+    "xaxis": "time (sim-minutes)",
+    "yaxis_risk": "risk",
+    "yaxis_news2": "partial NEWS2",
+    "caption": "Same stay, one clock: STYX risk above, partial NEWS2 below, each against its own "
+               "escalation line. On this silent-hypoxia presentation the early warning lands hours "
+               "before NEWS2 first triggers — a synthetic replay of one scenario, not a general "
+               "claim about NEWS2.",
+}
