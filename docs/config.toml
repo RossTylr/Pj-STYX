@@ -1,0 +1,13 @@
+# .streamlit/config.toml
+# Pj-STYX brand theme — derived from the logo mark (docs/Pj-STYX.jpeg).
+# APP-WIDE CHROME ONLY. The state-space warm risk ramp and the Okabe–Ito
+# ownership markers (STYX blue / NEWS2 vermilion) are clinical encodings —
+# they are NOT set here; leave them in styx/ as ratified (6l).
+
+[theme]
+primaryColor = "#1FA89A"               # teal  — links, selected states, sliders, focus rings
+backgroundColor = "#FFFFFF"            # canvas
+secondaryBackgroundColor = "#F5F8FB"   # sidebar + st.container surfaces
+textColor = "#15325E"                  # navy  — headings and body
+linkColor = "#1FA89A"                  # teal links  (drop this line if your Streamlit warns it's unknown)
+font = "sans serif"

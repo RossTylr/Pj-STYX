@@ -16,7 +16,7 @@ from styx.synth import Archetype, build_cohort
 from styx.timeline import episode_timeline
 from styx.viz.carer import carer_timeline_figure
 
-st.set_page_config(page_title="Patient Display", layout="wide")
+# Page config, logo and brand chrome are owned by the router (app/app.py via st.navigation).
 st.warning(
     "Demo mode: **replay of synthetic data** — no real patient data, not a live deployment.",
     icon="⚠️",

@@ -5,5 +5,15 @@ toolbarMode = "minimal"
 
 # Pin light mode — the warm risk ramp and the clinical-basis scoring table are designed against
 # a white NEWS2-point-0 stop; dark mode would invert the "white = no points" reading.
+#
+# (6h) Pj-STYX brand theme — derived from the logo mark (docs/Pj-STYX.jpeg). APP-WIDE CHROME ONLY.
+# The state-space warm risk ramp and the Okabe–Ito ownership markers (STYX blue / NEWS2 vermilion)
+# are ratified clinical encodings (6l) — they live in styx/viz/palette.py, never here.
 [theme]
 base = "light"
+primaryColor = "#1FA89A"               # teal  — links, selected states, sliders, focus rings
+backgroundColor = "#FFFFFF"            # canvas
+secondaryBackgroundColor = "#F5F8FB"   # sidebar + st.container surfaces
+textColor = "#15325E"                  # navy  — headings and body
+linkColor = "#1FA89A"                  # teal links
+font = "sans serif"

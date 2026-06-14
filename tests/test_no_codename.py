@@ -99,6 +99,7 @@ def _figure_builders() -> dict:
     from styx.viz.cone import cone_figure
     from styx.viz.echo import echo_figure
     from styx.viz.hazard import hazard_figure
+    from styx.viz.landing import obs_timeline_figure
     from styx.viz.theograph import detail_strip_figure, ribbon_figure
     from styx.viz.timeline import timeline_figure
     from styx.viz.trajectory import clinical_trajectory_figure, trajectory_figure
@@ -142,6 +143,7 @@ def _figure_builders() -> dict:
         echo_figure: lambda: echo_figure(cctx, focus_pid, neighbours, now_idx),
         hazard_figure: lambda: hazard_figure(
             stratify(cctx), focus_density=float(sum(patient.theograph.values()))),
+        obs_timeline_figure: lambda: obs_timeline_figure(),  # (6h) landing brand motif
     }
 
 

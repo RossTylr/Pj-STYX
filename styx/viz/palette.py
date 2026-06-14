@@ -7,6 +7,20 @@ dash, lane, or text label, so the figures and badges read for the ~8% with colou
 
 from __future__ import annotations
 
+# ============================ BRAND CHROME (6h) — non-clinical ===================================
+# Pj-STYX brand tokens, derived from the logo mark. These dress the *chrome only* (config theme,
+# logo lockup, landing motif). They are the single source shared by app theming and the landing.
+# They are NOT clinical encodings: the warm risk ramp and the Okabe–Ito ownership markers below
+# carry state and must never be recoloured to match the brand.
+BRAND_NAVY = "#15325E"  # headings + body ink
+BRAND_TEAL = "#1FA89A"  # accent — links, selected states, the landing STYX line
+BRAND_GREY = "#5E6E85"  # muted brand ink, neutral landing-motif dots
+BRAND_ALERT = "#E23B2D"  # brand alert flag (labelled urgency only, never a clinical band)
+BRAND_RAMP: tuple[str, ...] = ("#7B5FD1", "#2E80D6", "#1FA89A")  # cool brand sweep (chrome, not the warm clinical ramp)
+BRAND_SURFACE = "#FFFFFF"  # canvas
+BRAND_SURFACE_ALT = "#F5F8FB"  # sidebar + container surfaces
+# ====================== CLINICAL-SEMANTIC (6l) — ratified, do not recolour =======================
+
 # --- Okabe–Ito base swatches (plus a neutral grey, which the 8-colour set omits) ---------------
 BLACK = "#000000"
 ORANGE = "#E69F00"

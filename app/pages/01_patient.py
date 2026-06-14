@@ -42,7 +42,7 @@ from styx.viz.timeline import timeline_figure
 from styx.viz.trajectory import clinical_trajectory_figure  # trajectory_figure retained as future model view
 from styx.viz.waterline import waterline_figure
 
-st.set_page_config(page_title="STYX — patient", layout="wide")
+# Page config, logo and brand chrome are owned by the router (app/app.py via st.navigation).
 st.warning(
     "Demo mode: **replay of synthetic data** — no real patient data, not a live deployment.",
     icon="⚠️",

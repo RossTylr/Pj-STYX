@@ -47,7 +47,7 @@ from styx.viz.scoring_table import scoring_table_styler
 
 _ASSETS = Path(__file__).resolve().parents[1] / "assets"
 
-st.set_page_config(page_title="STYX — clinical basis", layout="wide")
+# Page config, logo and brand chrome are owned by the router (app/app.py via st.navigation).
 st.title("Clinical basis")
 st.caption(PAGE_PURPOSE)
 st.warning(
