@@ -5,7 +5,8 @@ classified purely over existing signals (status, early-warning flag, ordinal ETA
 score, so the pipeline digest is untouched by construction (the sentinel in test_baseline holds).
 Four guarantees here: the criteria map as specified, the default-frame split is not degenerate
 (a relabel that lands everyone in one tier fixes nothing), the tiering is deterministic (DET-1),
-and the rendered page shows labels + criteria, never raw tier keys.
+and the bay board renders every bed (the tier function still classifies, but the page no longer
+groups or hides by it — bays are physical bed positions, not a triage queue).
 """
 
 from streamlit.testing.v1 import AppTest
@@ -64,11 +65,16 @@ def test_tier_keys_closed_and_labels_plain() -> None:
         assert "_" not in text, f"raw tier key leaked into copy: {text!r}"
 
 
-def test_ward_page_renders_tiers() -> None:
-    # The rendered board shows all three tier labels and their criteria (transparency standard).
+def test_ward_page_renders_bays_with_every_bed_visible() -> None:
+    # The board reads as physical bays, not a triage queue: every bed is visible (no `+ watching`
+    # expander hides the quiet tier), and short bays pad to a uniform grid with vacant tiles. The
+    # tier *function* still classifies (tests above) — the page just no longer groups by it.
     at = AppTest.from_file(_WARD, default_timeout=90).run()
     assert not at.exception
-    blob = " ".join([el.value for el in at.markdown] + [el.value for el in at.caption])
-    for t in WATCH_TIERS:
-        assert WATCH_TIER_LABELS[t] in blob, f"tier label missing from ward page: {t}"
-        assert WATCH_TIER_CRITERIA[t] in blob, f"tier criteria missing from ward page: {t}"
+    assert len(at.get("expander")) == 0, "bays must not hide beds behind an expander"
+    blob = " ".join(el.value for el in at.markdown)
+    assert "vacant bed" in blob, "the fixed-capacity bay grid pads short bays with vacant tiles"
+    for p in build_cohort(seed=42).patients:  # every bed card renders — nothing hidden
+        assert f">Bed {p.pid} ·" in blob, f"bed {p.pid} missing from the bays"
+    for t in WATCH_TIERS:  # the tier-criteria caption is gone (the bay is not ranked)
+        assert WATCH_TIER_CRITERIA[t] not in blob

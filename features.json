@@ -1,0 +1,26 @@
+{
+  "slices": [
+    {
+      "id": "ward-board-restyle",
+      "title": "Ward board — routine-board restyle (light clinical palette)",
+      "layer": "presentation",
+      "status": "implemented"
+    },
+    {
+      "id": "ward-board-bays",
+      "title": "Ward board — physical bays, every bed visible",
+      "layer": "presentation",
+      "status": "implemented"
+    },
+    {
+      "id": "ward-ux-p0",
+      "title": "Ward-card UX hardening (P0-1 labels, P0-2 SpO₂ %, P0-3 verdict-primary)",
+      "layer": "presentation",
+      "status": "implemented",
+      "spec": "docs/STYX_WARD_FIX_SPEC.md",
+      "gate": "G-ward-ux",
+      "gate_status": "pending-human-signoff",
+      "determinism_hash": "9ea38949db8e5b8c19f969b9919d804013285fb78e0e48f5449c7e76336a5347"
+    }
+  ]
+}

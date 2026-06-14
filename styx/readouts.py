@@ -158,6 +158,21 @@ def news2_complete(patient: Patient) -> np.ndarray:
     return _news2_complete_subscores(patient).sum(axis=0)
 
 
+#: The six scored NEWS2 params, in the row order of ``_news2_complete_subscores`` (4 wearable
+#: streams + the two nurse-obs params). Plain display labels — the ward card's parameter pins.
+NEWS2_PARAM_LABELS: tuple[str, ...] = ("RR", "SpO₂", "HR", "Temp", "BP", "ACVPU")
+
+
+def news2_subscores_at(patient: Patient, idx: int) -> dict[str, int]:
+    """The six scored NEWS2 Scale-1 subscores at one sample (display helper for the ward card).
+
+    A read-only slice of the existing complete-comparator subscores — no new scoring, no synthetic
+    data, no model maths. ``idx`` is a sample index on the shared telemetry grid (the replay clock).
+    """
+    col = _news2_complete_subscores(patient)[:, idx]
+    return {label: int(s) for label, s in zip(NEWS2_PARAM_LABELS, col)}
+
+
 def news2_complete_crossing(patient: Patient) -> float | None:
     """First sim-minute the complete NEWS2 fires, by the same earliest-of rule over all 6 subscores.
 

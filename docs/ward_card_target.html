@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STYX ward card — visual target</title>
+<style>
+  :root{
+    --bg:#FCFBF7; --surface:#F4F2EC; --card:#FFFFFF; --band:#ECEAE2;
+    --tp:#1A1A18; --ts:#5F5E5A; --tt:#8A897F;
+    --warnbg:#FAEEDA; --warntx:#412402; --warnhd:#B26A12; --warnbd:#E3B469;
+    --ok:#3B6D11; --hair:rgba(0,0,0,0.10); --hair2:rgba(0,0,0,0.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tp);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 20px}
+  .head{margin:0 0 16px}
+  .head h1{font-size:18px;font-weight:600;margin:0 0 4px}
+  .head p{font-size:13px;color:var(--ts);margin:0}
+  .surface{background:var(--surface);border-radius:12px;padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+  .card{background:var(--card);border-radius:12px;padding:14px 16px;border:1px solid var(--hair)}
+  .card.flag{border:1px solid var(--warnbd)}
+  .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .bed{font-weight:600;font-size:15px}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    background:var(--warnbg);color:var(--warntx);padding:3px 10px;border-radius:8px}
+  .ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok)}
+  .verdict{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+  .verdict .ico{font-size:18px;line-height:1}
+  .verdict.flag{color:var(--warnhd)}
+  .verdict.flag .txt{font-size:16px;font-weight:600}
+  .verdict.calm{color:var(--ts)}
+  .verdict.calm .txt{font-size:15px;font-weight:400}
+  .sub{font-size:13px;color:var(--ts);margin:0 0 12px}
+  .sub.faint{color:var(--tt)}
+  .vitals{display:flex;gap:18px;font-size:13px;color:var(--ts);margin-bottom:12px}
+  .vitals .v{color:var(--tp);font-weight:600}
+  .vitals .was{color:var(--tt)}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;
+    padding-top:8px;border-top:1px solid var(--hair2)}
+  .foot .news{font-size:12px;color:var(--tt)}
+  .foot .link{font-size:12px;color:var(--ts)}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  svg.spark{display:block;width:100%;height:40px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <h1>STYX ward card — visual target</h1>
+      <p>Reference for the P0 redesign. Bed 6 = flagged (silent deterioration, given priority). Bed 9 = stable (deliberately receding). Match this — it is the target, not the implementation.</p>
+    </div>
+    <div class="surface">
+      <div class="grid">
+
+        <div class="card flag">
+          <div class="row">
+            <span class="bed">Bed 6 &middot; Respiratory</span>
+            <span class="badge">
+              <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+                <path d="M6 1 11 10 1 10 Z" fill="none" stroke="#B26A12" stroke-width="1.4" stroke-linejoin="round"/>
+                <path d="M6 4.6 V7" stroke="#B26A12" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="6" cy="8.4" r="0.7" fill="#B26A12"/>
+              </svg>early signal
+            </span>
+          </div>
+          <div class="verdict flag"><span class="ico">&uarr;</span><span class="txt">deteriorating &mdash; silent</span></div>
+          <p class="sub">~3 h before NEWS2 would escalate</p>
+          <div class="vitals">
+            <span>SpO&#8322; <span class="v">91%</span> &darr; <span class="was">was 96</span></span>
+            <span>RR <span class="v">22</span> &uarr;</span>
+          </div>
+          <svg class="spark" viewBox="0 0 150 40" role="img" aria-label="Rising instability trajectory leaving the normal band">
+            <rect x="0" y="26" width="150" height="12" fill="#ECEAE2" rx="2"/>
+            <polyline points="0,30 21,29 42,28 63,25 84,21 105,17 126,13 146,9" fill="none" stroke="#EF9F27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="146" cy="9" r="3" fill="#BA7517"/>
+          </svg>
+          <div class="foot"><span class="news">NEWS2 2 &middot; below trigger</span><span class="link">view trajectory &rsaquo;</span></div>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <span class="bed">Bed 9 &middot; Respiratory</span>
+            <span class="ok"><span class="dot" style="background:#639922"></span>stable</span>
+          </div>
+          <div class="verdict calm"><span class="ico">&rarr;</span><span class="txt">nominal &mdash; no drift</span></div>
+          <p class="sub faint">STYX and NEWS2 agree</p>
+          <div class="vitals"><span>SpO&#8322; <span class="v">97%</span> &rarr;</span></div>
+          <svg class="spark" viewBox="0 0 150 40" role="img" aria-label="Flat trajectory inside the normal band">
+            <rect x="0" y="26" width="150" height="12" fill="#ECEAE2" rx="2"/>
+            <polyline points="0,31 21,32 42,31 63,32 84,31 105,32 126,31 146,32" fill="none" stroke="#8A897F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="146" cy="32" r="3" fill="#639922"/>
+          </svg>
+          <div class="foot"><span class="news">NEWS2 0</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>

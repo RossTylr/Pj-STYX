@@ -83,7 +83,10 @@ Full spec per slice: `BUILD_MVP.md`.
 - Frozen dataclasses for decision/record objects (`@dataclass(frozen=True)`)
 - Protocols for interfaces (`typing.Protocol`); Enums for outcomes
 - No global state. No module-level RNG. No dict-iteration-order dependence.
-- `styx/viz` builders are pure: data in, Plotly figure out — no I/O, no Streamlit
+- `styx/viz` builders are pure: data in, Plotly figure **or HTML/SVG string** out — no I/O, no
+  Streamlit. A page may inject a builder's HTML/CSS via `st.markdown(..., unsafe_allow_html=True)`
+  (e.g. the ward routine board, `styx/viz/board.py`); the markup/styling logic stays in the builder,
+  never in the page. Band colour is reserved for the NEWS2 band signal; the STYX teal is identity/trend.
 - Notebooks are jupytext `.py` (paired to `.ipynb` only for sharing)
 - `ruff` for linting (line-length=100)
 
