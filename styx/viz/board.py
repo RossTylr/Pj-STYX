@@ -15,7 +15,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from html import escape
 
-from styx.readouts import NEWS2_RED, NEWS2_TRIGGER, news2_subscores_at
+from styx.explain import ETA_BANDS
+from styx.readouts import NEWS2_RED, NEWS2_TRIGGER, eta_ordinal, news2_subscores_at
 from styx.synth.cohort import Patient
 
 # --- light clinical tokens (reused from the news2-explainer / clinical-basis palette) ----------
@@ -270,6 +271,23 @@ def overview_strip_html(critical: int, early_signal: int, stable: int, clock: st
         f'{_ov_chip("stable", stable, "stable")}'
         '</div></div>'
     )
+
+
+def lead_headline(flagged_etas: Sequence[float | None]) -> str:
+    """The cohort lead-window payoff (§D): how many patients sit in an early-signal window and the
+    median lead STYX buys before NEWS2 would trigger. Reuses the per-card ETA banding so the headline
+    can never claim more precision than the cards (UQ-1 — a band, never an exact cohort minute), and
+    never negates the alert. ``flagged_etas`` is the early-signal set's soonest-crossing ETAs (None
+    where no crossing is yet projected)."""
+    n = len(flagged_etas)
+    if n == 0:
+        return ""
+    etas = sorted(e for e in flagged_etas if e is not None)
+    if not etas:  # flagged but no projected crossing yet — still ahead of NEWS2, stated plainly
+        return f"{n} in an early-signal window — flagged ahead of NEWS2"
+    median = etas[len(etas) // 2]
+    band = ETA_BANDS[eta_ordinal(median)]
+    return f"{n} in an early-signal window — median ~{band} of lead before NEWS2 would trigger"
 
 
 def worklist_html(rows: Sequence[tuple], more_count: int) -> str:

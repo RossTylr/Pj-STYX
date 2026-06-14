@@ -16,7 +16,7 @@ import numpy as np
 
 from styx.config import CHANNELS, RESCORE_CADENCE_MIN, SEED, VITALS
 from styx.synth.observations import generate_nurse_obs
-from styx.synth.scenario import Archetype, generate_episode, time_grid
+from styx.synth.scenario import Archetype, T_DEC_MIN, generate_episode, time_grid
 
 #: Per-channel baseline event rate + frailty loading (events ~ Poisson(base + load·frailty)).
 _CHANNEL_BASE: float = 1.0
@@ -29,6 +29,13 @@ _OUTCOME_MIDPOINT: float = 0.5
 
 #: Measurement noise (event units) on the observed comorbidity proxy — what a real model sees.
 _COMORBIDITY_NOISE: float = 3.0
+
+#: Per-escalator diversity (patient 0 stays scripted). Severity spreads how fast/far the trajectory
+#: moves; onset staggers when the silent window opens — floored ≥480 (≫ the 120 sim-min AEGIS
+#: baseline) and capped so SpO₂ still breaches inside the 1435 sim-min stay.
+_SEVERITY_RANGE: tuple[float, float] = (0.85, 1.35)
+_ONSET_RANGE: tuple[float, float] = (480.0, 660.0)
+_DIVERSITY_SALT: int = 7  # vector-seed component isolating diversity draws from the cohort stream
 
 #: Deterioration shapes an escalator can take (drawn uniformly) — they span the oxy×effort plane.
 _ESCALATOR_ARCHETYPES: tuple[Archetype, ...] = (
@@ -111,6 +118,7 @@ def build_cohort(seed: int = SEED, n_patients: int = 50) -> Cohort:
     children = np.random.default_rng(seed).spawn(n_patients)
     patients: list[Patient] = []
     for pid, child in enumerate(children):
+        severity, onset = 1.0, T_DEC_MIN  # scripted-index defaults; jittered for escalators below
         if pid == 0:
             # Scripted silent-hypoxia index case — no frailty/outcome draw (keeps patient 0 stable).
             frailty, archetype = 0.85, Archetype.SILENT_HYPOXIA
@@ -123,7 +131,15 @@ def build_cohort(seed: int = SEED, n_patients: int = 50) -> Cohort:
                 archetype = Archetype.STABLE
         outcome = Outcome.RECOVERED if archetype is Archetype.STABLE else Outcome.ESCALATED
         theograph = _theograph(child, frailty)
-        vitals = generate_episode(child, archetype=archetype)
+        if pid != 0:
+            # Per-patient diversity from an INDEPENDENT generator (explicit vector seed, like
+            # theograph.events) so theograph/comorbidity/nurse_obs all stay bit-identical to the
+            # pre-diversity cohort — the outcome AUC is provably unaffected. Patient 0 keeps the
+            # scripted defaults, so its vital stream is unshifted and G1/G3 remain bit-identical.
+            div = np.random.default_rng((seed, pid, _DIVERSITY_SALT))
+            severity = float(div.uniform(*_SEVERITY_RANGE))
+            onset = float(div.uniform(*_ONSET_RANGE))
+        vitals = generate_episode(child, archetype=archetype, severity=severity, onset_min=onset)
         # Trailing draws (after the episode) so adding them cannot shift patient 0's vital stream.
         comorbidity = float(sum(theograph.values()) + child.normal(0.0, _COMORBIDITY_NOISE))
         nurse_obs = generate_nurse_obs(grid, child)  # comparator-only; drawn last (DET-1 safe)

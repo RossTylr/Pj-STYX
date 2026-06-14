@@ -24,7 +24,10 @@ from styx.readouts import (
 from styx.synth import build_cohort
 from tests.test_baseline import pipeline_digest
 
-_RECORDED_DIGEST = "9ea38949db8e5b8c19f969b9919d804013285fb78e0e48f5449c7e76336a5347"
+#: Re-recorded after Slice A (per-escalator severity + onset jitter) intentionally changed the
+#: vital streams + risk scores. nurse_obs are NOT in the digest, so this still proves they stay
+#: comparator-only. theograph counts are unchanged (diversity uses an independent generator).
+_RECORDED_DIGEST = "c9380e9cf7c134a82f2a45dd15c9769129540eee3c7d5db5aa54dc587860b1d9"
 
 
 def _silent():

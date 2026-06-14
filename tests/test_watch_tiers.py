@@ -39,9 +39,11 @@ def test_tier_criteria_mapping() -> None:
 def test_default_frame_distribution_not_degenerate() -> None:
     # The F-02 fix only works if review-now is a manageable set and the bulk sits in watch —
     # all three tiers populated at the silent-window default frame, summing to the watchlist.
+    # Onsets are staggered (Slice A), so at the default clock a couple of escalators have not yet
+    # begun to rise — the watchlist is the bulk of the 21 escalators, not necessarily all of them.
     cctx = build_cohort_context(build_cohort(seed=42))
     watch = [r for r in ward_frame(cctx, cctx.default_idx) if r.silent_but_rising]
-    assert len(watch) == 21
+    assert 18 <= len(watch) <= 21, f"watchlist {len(watch)} outside the expected staggered range"
     counts = {t: sum(1 for r in watch if watch_tier(r) == t) for t in WATCH_TIERS}
     assert sum(counts.values()) == len(watch)
     assert all(counts[t] > 0 for t in WATCH_TIERS), f"degenerate tier split: {counts}"

@@ -184,6 +184,10 @@ st.markdown(
                               sim_clock(cctx.t_min[now_idx])),
     unsafe_allow_html=True,
 )
+# (§D) the lead-window payoff — the actionable head-start STYX buys, as a band (never an action taken).
+_lead_line = board.lead_headline([r.eta_soonest_min for r in _flagged])
+if _lead_line:
+    st.caption(_lead_line)
 
 
 def _rank_key(r):

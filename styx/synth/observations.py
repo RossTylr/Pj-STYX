@@ -18,12 +18,14 @@ import numpy as np
 
 from styx.config import NURSE_OBS_CADENCE_MIN
 
-#: Preserved baselines for this scenario. BP 122 mmHg sits well inside NEWS2 band 0 (111–219 → 0);
-#: jitter is clipped so a round can never dip into band 1 (≤110), keeping the nurse contribution 0.
-#: ACVPU 0 = "Alert" (any other level — new confusion / V / P / U — scores a red 3).
-_BP_BASELINE: float = 122.0
+#: Per-patient BP baseline range. A *spread* of resting pressures across the cohort (not a single
+#: 122 mmHg for everyone, which reads as synthetic) — but the whole range sits inside NEWS2 band 0
+#: (≥111 → 0), and with the floor below it a round can never dip into band 1, so every patient's
+#: nurse BP contribution stays exactly 0. Variation is cosmetic-only: the comparator is untouched.
+_BP_BASELINE_RANGE: tuple[float, float] = (112.0, 138.0)
 _BP_JITTER: float = 3.0
-_BP_FLOOR: float = 114.0  # guarantees band 0 (≥ 111) even at the jitter tail
+_BP_FLOOR: float = 114.0  # guarantees band 0 (≥ 111) even at the low-baseline jitter tail
+#: ACVPU 0 = "Alert" (any other level — new confusion / V / P / U — scores a red 3).
 _ACVPU_ALERT: int = 0
 
 
@@ -51,7 +53,8 @@ def generate_nurse_obs(t_min: np.ndarray, rng: np.random.Generator) -> dict[str,
     other channel.
     """
     rounds = _round_indices(t_min, NURSE_OBS_CADENCE_MIN)
-    bp_rounds = np.maximum(_BP_BASELINE + rng.normal(0.0, _BP_JITTER, size=len(rounds)), _BP_FLOOR)
+    baseline = float(rng.uniform(*_BP_BASELINE_RANGE))  # this patient's resting pressure (band 0)
+    bp_rounds = np.maximum(baseline + rng.normal(0.0, _BP_JITTER, size=len(rounds)), _BP_FLOOR)
     bp = _step_hold(bp_rounds, rounds, len(t_min))
     acvpu = np.full(len(t_min), float(_ACVPU_ALERT))
     return {"systolic_bp": bp, "acvpu": acvpu}

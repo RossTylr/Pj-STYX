@@ -76,10 +76,20 @@ def time_grid() -> np.ndarray:
 
 
 def generate_episode(
-    rng: np.random.Generator, *, archetype: Archetype, severity: float = 1.0
+    rng: np.random.Generator,
+    *,
+    archetype: Archetype,
+    severity: float = 1.0,
+    onset_min: float = T_DEC_MIN,
 ) -> dict[str, np.ndarray]:
-    """Generate one stay as {vital: array[N_SAMPLES]} keyed by VITALS, per the archetype shape."""
+    """Generate one stay as {vital: array[N_SAMPLES]} keyed by VITALS, per the archetype shape.
+
+    ``onset_min`` is the decoupling onset (defaults to T_DEC_MIN so the scripted index case is
+    bit-identical); per-patient jitter staggers when each silent window opens. The labs clock keeps
+    its fixed offset relative to onset, so the semi-independent inflammation timing tracks the jitter.
+    """
     t = time_grid()
+    labs_min = onset_min + (T_LABS_MIN - T_DEC_MIN)
     d = np.sin(2.0 * np.pi * t / FAST_PERIOD_MIN)  # shared fast compensatory drive
     eps = lambda: rng.normal(0.0, NOISE, N_SAMPLES)  # noqa: E731 — local measurement noise
 
@@ -93,9 +103,9 @@ def generate_episode(
         labs = BASE["labs_proxy"] + eps()
     else:
         f_spo2, f_rr, f_hr = _ARCHETYPE_SLOPES[archetype]
-        post = t >= T_DEC_MIN
-        dec_t = np.clip(t - T_DEC_MIN, 0.0, None)
-        labs_t = np.clip(t - T_LABS_MIN, 0.0, None)  # later, independent onset
+        post = t >= onset_min
+        dec_t = np.clip(t - onset_min, 0.0, None)
+        labs_t = np.clip(t - labs_min, 0.0, None)  # later, independent onset
         indep_spo2 = rng.normal(0.0, DECOUP_FAST_SPO2, N_SAMPLES)
         indep_rr = rng.normal(0.0, DECOUP_FAST_RR, N_SAMPLES)
         spo2_post = BASE["SpO2"] + severity * f_spo2 * SLOPE_SPO2 * dec_t + indep_spo2
