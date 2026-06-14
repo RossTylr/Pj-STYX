@@ -24,23 +24,7 @@ from styx.readouts import eta_ordinal, footer_text, sim_clock
 from styx.synth import Archetype, build_cohort
 from styx.viz import board
 
-st.set_page_config(page_title="STYX — ward", page_icon="docs/Pj-STYX.jpeg", layout="wide")
-st.logo("docs/Pj-STYX.jpeg", size="large")  # (6h) app-wide brand mark above the sidebar nav
-st.markdown(  # (6h+) full-width brand mark in the sidebar banner; gone when the sidebar is closed
-    "<style>"
-    "[data-testid='stSidebarHeader']{height:auto!important;display:block!important;"
-    "position:relative!important;padding:.5rem!important;}"
-    "[data-testid='stSidebarCollapseButton']{position:absolute!important;"
-    "top:.35rem!important;right:.35rem!important;z-index:2!important;}"
-    "[data-testid='stSidebarHeader'] [data-testid='stLogoLink']{width:100%!important;"
-    "height:auto!important;max-height:none!important;display:block!important;}"
-    "[data-testid='stSidebarLogo']{width:100%!important;height:auto!important;"
-    "max-height:none!important;}"
-    "section[data-testid='stSidebar'][aria-expanded='false'] [data-testid='stSidebarLogo']"
-    "{display:none!important;}"
-    "</style>",
-    unsafe_allow_html=True,
-)
+# Page config, logo and brand chrome are owned by the router (app/app.py via st.navigation).
 st.warning(
     "Demo mode: **replay of synthetic data** — no real patient data, not a live deployment.",
     icon="⚠️",
@@ -111,29 +95,31 @@ def _spark(r) -> tuple[str, str]:
 
 
 def _sub_line(r) -> str:
-    """The card's sub-line (6): for a flagged bed, the lead-time before NEWS2 would escalate (a band,
-    never an exact minute — UQ-1); for a calm bed, the STYX/NEWS2 agreement. Never a codename."""
+    """Flagged-card subtext (§C copy contract): one template family that foregrounds the STYX lead —
+    it never negates the alert ('no … projected' / 'nothing' / 'not … yet' are banned; the
+    below-trigger fact lives in the NEWS2 footer). Calm beds note the STYX/NEWS2 agreement."""
     if not r.silent_but_rising:
         return "STYX and NEWS2 agree"
-    if r.status == "no-forecast":
-        return "rising — no NEWS2 escalation projected yet"
-    band = ETA_BANDS[eta_ordinal(r.eta_soonest_min)]
-    return f"~{band if r.eta_confident else '≥ ' + band} before NEWS2 would escalate"
+    if r.eta_soonest_min is not None:  # a projected crossing exists → lead-time band (UQ-1)
+        return f"~{ETA_BANDS[eta_ordinal(r.eta_soonest_min)]} ahead of NEWS2"
+    return "rising — flagged ahead of NEWS2"  # no forecast yet — still ahead of NEWS2, never negated
 
 
-def _rail_item(r, n2: board.News2Now):
-    """Attention-rail entry (pid, band, short reason) for a flagged bed, else None."""
-    if n2.band == "high":
-        reason = "high NEWS2"
-    elif n2.single_red:
-        reason = "single red score"
-    elif n2.band == "med":
-        reason = "medium NEWS2"
-    elif r.silent_but_rising:
-        reason = "early signal"
-    else:
-        return None
-    return r.pid, n2.band, reason
+_WORKLIST_N = 6  # (§E) review-now cap; the tail collapses to "+k more in watch"
+
+
+def _is_critical(r) -> bool:
+    """A NEWS2 escalation (trigger reached: aggregate ≥ 5 or a single red) — band ≠ low."""
+    return _n2[r.pid].band != "low"
+
+
+def _lead_text(r) -> str:
+    """Worklist lead-time cell (§E): a band, never an exact minute (UQ-1)."""
+    if _is_critical(r):
+        return "review now"
+    if r.eta_soonest_min is not None:
+        return f"~{ETA_BANDS[eta_ordinal(r.eta_soonest_min)]} lead"
+    return "rising"
 
 
 def _drill(r) -> None:
@@ -185,9 +171,41 @@ def _bed(cell, r) -> None:
             _drill(r)
 
 
-_header("Attention rail — flagged beds across all bays", "ward_board")
-rail = [item for r in rows if (item := _rail_item(r, _n2[r.pid])) is not None]
-st.markdown(board.attention_rail_html(rail), unsafe_allow_html=True)
+# --- (§E) ward overview strip + ranked review-now worklist (replaces the flat 21-pill rail) -----
+# Disjoint partition over existing model output (hash-safe display cut): critical (NEWS2 escalated)
+# · early-signal (STYX-flagged, NEWS2 still low) · stable. The flagged set splits into a ranked
+# review-now top-N + a collapsed watch count — orientation + triage, not 21 identical pills.
+_header("Ward overview", "ward_board")
+_critical = [r for r in rows if _is_critical(r)]
+_flagged = [r for r in rows if r.silent_but_rising and not _is_critical(r)]
+_n_stable = len(rows) - len(_critical) - len(_flagged)
+st.markdown(
+    board.overview_strip_html(len(_critical), len(_flagged), _n_stable,
+                              sim_clock(cctx.t_min[now_idx])),
+    unsafe_allow_html=True,
+)
+
+
+def _rank_key(r):
+    return board.review_rank(critical=_is_critical(r), eta_soonest_min=r.eta_soonest_min,
+                             risk_now=r.risk_now, pid=r.pid)
+
+
+_flagged_ranked = sorted(_flagged, key=_rank_key)
+_review_now = sorted(_critical, key=_rank_key) + _flagged_ranked[:_WORKLIST_N]  # reds first
+_watch_count = len(_flagged_ranked) - len(_flagged_ranked[:_WORKLIST_N])
+_wl_rows = [
+    (i + 1, r.pid, board.moving_vital(_patients[r.pid], now_idx), _lead_text(r),
+     "attention" if _is_critical(r) else "watch")
+    for i, r in enumerate(_review_now)
+]
+st.markdown(board.worklist_html(_wl_rows, _watch_count), unsafe_allow_html=True)
+if _review_now:  # click-to-jump: one button per worklist row (carries the clock, like _drill)
+    for col, r in zip(st.columns(len(_review_now)), _review_now):
+        if col.button(f"Bed {r.pid} →", key=f"jump_{r.pid}"):
+            st.session_state["patient_pick"] = r.pid
+            st.session_state["scrub_pid"] = r.pid
+            st.switch_page("pages/01_patient.py")
 
 for w in range(WARD_COUNT):
     box = boxes[w]
@@ -197,6 +215,9 @@ for w in range(WARD_COUNT):
         high=sum(n2.band == "high" for n2 in bands),
         med=sum(n2.band == "med" for n2 in bands),
         max_news2=max((n2.aggregate for n2 in bands), default=0),
+        # early-signal = STYX-flagged AND NEWS2 still low — the same disjoint definition the §E
+        # overview/worklist partition uses, so the bay count and the overview count never disagree.
+        early_signal=sum(r.silent_but_rising and not _is_critical(r) for r in box),
     )
     with st.container(border=True):
         st.markdown(board.banner_html(ward_labels[w], rollup), unsafe_allow_html=True)

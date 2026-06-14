@@ -38,7 +38,7 @@ def test_ward_renders_and_patient0_is_on_the_watchlist() -> None:
     assert len(at.get("dataframe")) == 0 and len(at.get("plotly_chart")) == 0
     blob = " ".join(md.value for md in at.markdown)
     assert all(label in blob for label in WARD_LABEL_PRESETS["nhs_hah"])  # F6 — the three boxes
-    assert "patient 0" in blob  # the hero card renders
+    assert "Bed 0 ·" in blob  # the hero card renders (board header: "Bed {pid} · {ward}")
 
 
 def test_drill_carries_the_clock_into_the_patient_page() -> None:

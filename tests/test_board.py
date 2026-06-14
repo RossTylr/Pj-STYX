@@ -46,11 +46,16 @@ def test_news2_now_is_deterministic() -> None:
     assert board.news2_now(a, idx) == board.news2_now(b, idx)
 
 
-def test_ward_status_tiers() -> None:
-    assert board.ward_status(board.Rollup(8, 0, 0, 1)) == "STEADY"
-    assert board.ward_status(board.Rollup(8, 0, 2, 4)) == "BUSY"
-    assert board.ward_status(board.Rollup(8, 1, 0, 6)) == "BUSY"
-    assert board.ward_status(board.Rollup(8, 2, 0, 7)) == "SURGE"
+def test_bay_status_worst_of_news2_and_styx() -> None:
+    # P1 §A worst-wins ladder: NEWS2 escalation (high or med) → ATTENTION; else any STYX
+    # early-signal bed → WATCH; else STEADY. The safety inversion (STEADY over a flagged bed) is
+    # impossible by construction.
+    assert board.bay_status(board.Rollup(8, 0, 0, 1, early_signal=0)) == "STEADY"
+    assert board.bay_status(board.Rollup(8, 0, 0, 2, early_signal=3)) == "WATCH"   # flagged → WATCH
+    assert board.bay_status(board.Rollup(8, 0, 1, 5, early_signal=4)) == "ATTENTION"  # med fired
+    assert board.bay_status(board.Rollup(8, 2, 0, 8, early_signal=0)) == "ATTENTION"  # high
+    # the hard invariant: a bay with flagged beds can never read STEADY
+    assert board.bay_status(board.Rollup(17, 0, 0, 2, early_signal=9)) != "STEADY"
 
 
 def test_trend_arrow_reads_the_slope() -> None:
@@ -130,15 +135,33 @@ def test_vital_reading_reads_against_the_early_stay_baseline() -> None:
     assert r.trend in {"↑", "↓", "→"}
 
 
-def test_banner_html_shows_label_and_status() -> None:
-    html = board.banner_html("Respiratory", board.Rollup(8, 2, 1, 7))
-    assert "Respiratory" in html and "SURGE" in html and "max NEWS2" in html
+def test_banner_html_shows_label_status_and_early_signal_count() -> None:
+    html = board.banner_html("Respiratory", board.Rollup(17, 0, 0, 2, early_signal=9))
+    assert "Respiratory" in html and "WATCH" in html and "max NEWS2" in html
+    assert "<b>9</b> early signal" in html  # §A: the STYX count rides the header
 
 
-def test_attention_rail_flags_only_listed_beds() -> None:
-    assert "No beds flagged" in board.attention_rail_html([])
-    rail = board.attention_rail_html([(0, "high", "single red"), (3, "med", "early signal")])
-    assert "patient 0" in rail and "patient 3" in rail and "single red" in rail
+def test_overview_strip_counts_not_pills() -> None:
+    html = board.overview_strip_html(0, 21, 29, "12:30")
+    assert "50 patients" in html and "scored 12:30" in html
+    assert ">21<" in html and "early signal" in html and "29" in html and "stable" in html
+
+
+def test_review_rank_orders_reds_then_shortest_lead() -> None:
+    key = board.review_rank
+    red = key(critical=True, eta_soonest_min=999.0, risk_now=0.1, pid=9)
+    soon = key(critical=False, eta_soonest_min=15.0, risk_now=0.2, pid=1)
+    late = key(critical=False, eta_soonest_min=90.0, risk_now=0.9, pid=2)
+    none = key(critical=False, eta_soonest_min=None, risk_now=0.5, pid=3)
+    assert red < soon < late < none  # reds first; then shortest lead; no-forecast last
+
+
+def test_worklist_caps_and_collapses_the_tail() -> None:
+    rows = [(i + 1, i, f"SpO₂ {90 + i}% ↓", "~1–2 h lead", "watch") for i in range(6)]
+    html = board.worklist_html(rows, more_count=15)
+    assert html.count("styx-wl-row") == 6 and "Bed 0" in html
+    assert "+ 15 more in watch" in html
+    assert board.worklist_html([], 0).count("styx-wl-row") == 0  # empty → no rows
 
 
 def test_vacant_tile_is_plain_and_patient_free() -> None:

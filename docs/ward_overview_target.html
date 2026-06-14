@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STYX ward overview + bay header — visual target</title>
+<style>
+  :root{
+    --bg:#FCFBF7; --surface:#F4F2EC; --card:#FFFFFF;
+    --tp:#1A1A18; --ts:#5F5E5A; --tt:#8A897F;
+    --amber:#EF9F27; --amberhd:#B26A12; --amberbg:#FAEEDA; --ambertx:#412402; --amberbd:#E3B469;
+    --red:#E24B4A; --green:#639922; --greenhd:#3B6D11; --greenbd:#BFD79A;
+    --hair:rgba(0,0,0,0.10); --hair2:rgba(0,0,0,0.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tp);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 20px}
+  .head{margin:0 0 16px}
+  .head h1{font-size:18px;font-weight:600;margin:0 0 4px}
+  .head p{font-size:13px;color:var(--ts);margin:0}
+  .surface{background:var(--surface);border-radius:12px;padding:16px}
+  .lbl{font-size:12px;color:var(--tt);text-transform:uppercase;letter-spacing:0.04em;margin:0 0 10px}
+  .cohort{font-size:13px;color:var(--ts);margin:0 0 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}
+  .chip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--hair);
+    border-radius:8px;padding:8px 12px}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .chip .num{font-size:18px;font-weight:600}
+  .chip .cap{font-size:13px;color:var(--ts)}
+  .panel{background:var(--card);border:1px solid var(--hair);border-radius:12px;padding:12px 14px}
+  .panelhead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 10px}
+  .panelhead .t{font-size:14px;font-weight:600}
+  .panelhead .s{font-size:12px;color:var(--tt)}
+  .rrow{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--hair2)}
+  .rrow .rk{font-size:12px;color:var(--tt);width:14px}
+  .rrow .bed{font-size:14px;font-weight:600;width:64px}
+  .rrow .det{font-size:13px;color:var(--ts);flex:1}
+  .rrow .lead{font-size:12px;color:var(--amberhd)}
+  .rrow .leadn{font-size:12px;color:var(--ts)}
+  .rrow .chev{font-size:13px;color:var(--tt)}
+  .more{padding:10px 0 2px;border-top:1px solid var(--hair2);margin-top:2px;font-size:13px;color:var(--ts)}
+  .divider{height:1px;background:var(--hair);margin:18px 0}
+  .bay{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--hair);
+    border-left:4px solid var(--amber);border-radius:0;padding:12px 14px}
+  .bay .name{font-size:15px;font-weight:600}
+  .bay .stats{flex:1;text-align:right;font-size:13px;color:var(--ts)}
+  .badge{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:3px 12px;
+    border-radius:999px;border:1px solid var(--amberbd);color:var(--amberhd);background:var(--amberbg)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <h1>Ward overview + propagated bay header — visual target</h1>
+      <p>P1 reference. Top: the overview strip and ranked worklist that replace the flat 21-pill rail. Bottom: the bay header once STYX status propagates — a bay with flagged beds reads WATCH, never STEADY. Counts/ranking are illustrative; the real split comes from the model.</p>
+    </div>
+    <div class="surface">
+
+      <p class="lbl">Ward overview &mdash; replaces the rail</p>
+      <p class="cohort">50 patients &middot; scored 12:30 (sim)</p>
+      <div class="chips">
+        <div class="chip"><span class="dot" style="background:var(--red)"></span><span class="num">0</span><span class="cap">critical</span></div>
+        <div class="chip"><span class="dot" style="background:var(--amber)"></span><span class="num">21</span><span class="cap">early signal</span></div>
+        <div class="chip"><span class="dot" style="background:var(--green)"></span><span class="num">29</span><span class="cap">stable</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panelhead"><span class="t">Review first</span><span class="s">ranked by lead-time</span></div>
+        <div class="rrow"><span class="rk">1</span><span class="bed">Bed 0</span><span class="det">SpO&#8322; 94% &darr; &middot; resp</span><span class="lead">~1&ndash;2 h lead</span><span class="chev">&rsaquo;</span></div>
+        <div class="rrow"><span class="rk">2</span><span class="bed">Bed 6</span><span class="det">SpO&#8322; 94% &darr; &middot; resp</span><span class="lead">rising</span><span class="chev">&rsaquo;</span></div>
+        <div class="rrow"><span class="rk">3</span><span class="bed">Bed 22</span><span class="det">RR 21 &uarr; &middot; surg</span><span class="leadn">~3 h lead</span><span class="chev">&rsaquo;</span></div>
+        <div class="more">+ 18 more in watch &rsaquo;</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <p class="lbl">Bay header &mdash; STYX propagated</p>
+      <div class="bay">
+        <span class="name">Respiratory</span>
+        <span class="stats">17 beds &middot; 0 high &middot; 0 med &middot; 2 max NEWS2 &middot; 2 early signal</span>
+        <span class="badge">WATCH</span>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

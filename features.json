@@ -21,6 +21,17 @@
       "gate": "G-ward-ux",
       "gate_status": "pending-human-signoff",
       "determinism_hash": "9ea38949db8e5b8c19f969b9919d804013285fb78e0e48f5449c7e76336a5347"
+    },
+    {
+      "id": "ward-ux-p1",
+      "title": "Ward-board overview + ranked worklist + bay-header propagation + verdict-copy contract (§A,C,D,E; B3)",
+      "layer": "presentation",
+      "status": "implemented",
+      "spec": "docs/STYX_WARD_FIX_SPEC_P1.md",
+      "gate": "G-ward-ux-p1",
+      "gate_status": "pending-human-signoff",
+      "determinism_hash": "9ea38949db8e5b8c19f969b9919d804013285fb78e0e48f5449c7e76336a5347",
+      "notes": "B1 diagnosis: Bed 0/6 records differ (integer-rounding near-twins) -> B3 presentation, no generator change. B2 (data-cohort-variance) NOT triggered."
     }
   ]
 }

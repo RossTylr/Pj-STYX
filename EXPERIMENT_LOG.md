@@ -237,3 +237,50 @@ determinism digest **unchanged = `9ea38949db8e5b8c19f969b9919d804013285fb78e0e48
 | S7 · ward board → physical bays (layout) | **Presentation ✅** | follow-up to the restyle above, same presentation-only spirit (no `synth/forecast/risk/cohort` touch → digest holds by construction): the board now reads as **physical bays, every bed visible**, not a triage queue. *Removed:* the `+ N watching` **expander**, the STYX watch-tier grouping/sorting on the page, and the tier-criteria caption (the `watch_tier` function + its pure tests stay — just unused by this page now). *Layout:* the side-by-side `st.columns(3)` became **3 stacked full-width bays** (`st.container(border=True)` each); within a bay, beds are laid out **`board.BAY_COLS=6` across in `st.columns(6)` rows, ordered by `pid` (bed number), never urgency**. *Fixed capacity:* bays are sized uniformly to the largest ward — `rows = ceil(max_ward / 6)` (= 3 at seed 42 → **18 beds/bay**); short bays **pad with vacant tiles** (new pure `board.vacant_tile_html()` + `.styx-vacant` rule — carries no patient data, no drill target). Cohort 17/17/16 → 50 cards + **4 vacant tiles** = 54 slots (3 bays × 18). *Kept:* the per-bay **banner** rollup (STEADY/BUSY/SURGE over the bay's real beds) and the top **attention rail** (flagged beds, still urgency-ordered — the triage summary the unranked grid no longer gives). **Drill-through intact** (21 `open_{pid}` escalator buttons, one per occupied non-stable bed). **Render-verified via AppTest:** 0 expanders, all 50 bed cards present (`>patient {pid}</span>`), 4 vacant tiles, 3 banners, rail present. *Tests:* rewrote `test_watch_tiers::test_ward_page_renders_tiers` → `…renders_bays_with_every_bed_visible` (no expander, every bed present, vacant padding, tier caption gone); +2 `test_board` (vacant tile is patient-free; bay padding fills short bay in bed order). **Baseline digest `9ea38949…336a5347` bit-identical**; full suite **122 passed** (120 prior + 2); `ruff` clean. **Not committed.** | **210** (unchanged — layout-only; G1/G3 hold by construction) | 2026-06-14 |
 
 | `ward-ux-p0` · ward-card UX hardening (P0-1..P0-3) | **Presentation ✅ · gate `G-ward-ux` PENDING human** | the demo-blocking card faults from [docs/STYX_WARD_FIX_SPEC.md](docs/STYX_WARD_FIX_SPEC.md), matched to [docs/ward_card_target.html](docs/ward_card_target.html). **Presentation layer only** — only `styx/viz/board.py` (card builder) + `app/pages/02_ward.py` (thin client) touched; **boot determinism sentinel re-asserted byte-identical `9ea38949…336a5347`** (no scoring-path leak; `patient.vitals` is read-only). *P0-1 (typography):* retired the long `silent-hypoxia-like` pattern strings for an **approved short state set** (`board.APPROVED_STATES` = silent hypoxia · stable · recovering · early signal · deteriorating — silent), the only tokens marked `styx-state`; card CSS gains `overflow-wrap:normal; word-break:keep-all; hyphens:none` (P0-1a — verified at the visual gate, AppTest is blind to CSS). *P0-2 (SpO₂):* removed the NEWS2-sub-score **pins** (the unsafe `SpO₂ 2` that reads as a 1–2 % saturation) and added read-only `board.vital_reading` → the vitals line now shows the **real saturation as a percentage with a trend glyph + baseline prior** (`SpO₂ 91% ↓ (was 96)`; RR added on flagged cards). *P0-3 (hierarchy inversion):* `card_html` rewritten to a vertical, **verdict-primary** layout — for a STYX-flagged bed the verdict (state + trend + lead-time) leads and the big green NEWS2 number is **demoted to a muted foot line** (`NEWS2 2 · below trigger`) *after* the verdict; one `--accent` var owns dot + border + verdict so the encodings can't disagree; header now `Bed {pid} · {ward}`. Calm beds recede (Bed 9 treatment). **Oracle** — new `tests/test_ward_ux.py` (AppTest, seed=42): every `styx-state` token ∈ approved set; no soft-hyphen; per-card SpO₂ matches `/SpO.? ?\d{2,3}%/` with **zero** bare `/SpO.? ?[0-3]\b/` across **both** pages; flagged card's verdict precedes the NEWS2 line in DOM order. Updated `test_board` (new `card_html` signature + `vital_reading`/`_vitals_html`/`card_labels` units) and `test_watch_tiers` (`>patient` → `>Bed`). **Render-verified:** Bed 0 → `early signal` / `↑ deteriorating — silent` / `~≥ 1–2 h before NEWS2 would escalate` / `SpO₂ 94% ↓ (was 97)` / `NEWS2 1 · below trigger`; state labels {deteriorating — silent, early signal, stable} ⊆ approved; 50 SpO₂ %-tokens, 0 bare. Full suite **131 passed** (122 prior + 9); `ruff` clean. **`features.json` created** (`ward-ux-p0` → implemented, gate pending). Out of scope (next slice): P1 bay-header STYX propagation, rail triage/cap, single severity-colour; P2 sparkline band. **Gate (sensors-not-actuators):** read-only MAAFI red-team + arbiter appended to `GATE_REVIEW.md`; `G-ward-ux` left for human sign-off — not self-passed. | **210** (unchanged — presentation-only; determinism byte-identical) | 2026-06-14 |
+
+## 2026-06-14 — slice ward-ux-p0 (presentation) — CLOSED
+P0 ward-board UX hardening shipped; verified at visual gate + AppTest.
+- P0-1 typographic breakage resolved (overflow-wrap/word-break + approved short labels).
+- P0-2 SpO₂ rendered as saturation % + trend + prior (was: bare sub-score — clinically unsafe).
+- P0-3 flagged-card hierarchy inverted (STYX verdict primary; NEWS2 demoted to footer).
+Determinism: scored-cohort SHA-256 unchanged (presentation-only slice). pytest green.
+UX/MAAFI panel composite 4.1 -> 6.1 /10
+  (legibility 4->7, silent-deterioration salience 4->7, craft 3->7;
+   alarm-discipline 4->4, consistency 4->5 — both deferred to ward-ux-p1).
+Gate G-ward-ux: signed __________ (Ross / date).
+Carried to ward-ux-p1: bay-header propagation, verdict-copy contract, NEWS2 footer,
+  overview strip + ranked worklist + two-tier rail; conditional data-cohort-variance slice
+  if twins root-cause = generator.
+
+## 2026-06-14 — slice ward-ux-p1 (presentation) — gate G-ward-ux-p1 PENDING human
+P1 overview/triage/propagation per docs/STYX_WARD_FIX_SPEC_P1.md. **Presentation only** — only
+styx/viz/board.py + app/pages/02_ward.py touched; **determinism sentinel byte-identical
+9ea38949…336a5347** (boot == post; §B2 not triggered). Baseline pytest green (138 passed); ruff clean.
+- §B1 twins DIAGNOSED → §B3 (this slice): seed=42 records for Bed 0 vs Bed 6 DIFFER (SpO₂ now
+  93.64 vs 94.25; series max-diff ~1.3; distinct frailty/theograph) — they only *looked* identical
+  because integer rounding collapses 17/21 flagged beds into 8 vitals buckets. NOT a generator clone,
+  so no scoring change / no hash re-baseline. Differentiation is by lead-time (Bed 0 escalating →
+  "~1–2 h ahead of NEWS2"; Bed 6 no-forecast → "rising — flagged ahead of NEWS2"), exactly as
+  ward_overview_target.html shows. (Tight clustering noted as a candidate future data-cohort-variance
+  slice, but records differ → it is not a §B2 clone.)
+- §A bay-header propagation: Rollup gains an early_signal count; ward_status→bay_status worst-of
+  ladder ATTENTION (NEWS2 high/med) → WATCH (any STYX early-signal) → STEADY. Header shows
+  "… · {f} early signal". All three bays read WATCH at the silent-window frame (none STEADY over a
+  flagged bed — the safety inversion is gone).
+- §C verdict-copy contract: flagged subtext is one template family that foregrounds the STYX lead
+  ("~{band} ahead of NEWS2" / "rising — flagged ahead of NEWS2"); the banned negations
+  ("no … projected" / "nothing" / "not … yet") are removed; the below-trigger fact lives only in §D.
+- §D demoted NEWS2 footer ("NEWS2 {n} · below trigger") retained on every flagged card.
+- §E overview strip + ranked worklist replace the flat 21-pill rail: counts (0 critical · 21 early
+  signal · 29 stable = 50), a review-now worklist (top N=6 by review_rank = reds → shortest lead →
+  highest score; rank · Bed · the one moving vital · lead) + "+15 more in watch", click-to-jump
+  buttons. A DISPLAY cut over existing model output → hash-safe.
+Oracle: tests/test_ward_ux.py P1 block (bay never STEADY-with-flag + early-signal count == flagged;
+  subtext ∈ allowed templates, zero banned; every flagged card keeps the NEWS2 footer; worklist ≤6
+  ordered by rank + watch collapsed + partition == 50 + no flat rail; B3 per-bed fidelity + twins
+  differ). test_board.py updated (bay_status/banner/overview/worklist/review_rank); test_milestone
+  hero assertion "patient 0" → "Bed 0 ·". Full suite 138 passed.
+Visual gate: AppTest HTML render captured as evidence (banners WATCH; overview + worklist match the
+  target); before/after screenshot for the human gate outstanding.
+MAAFI red-team/arbiter appended to GATE_REVIEW.md. Gate G-ward-ux-p1 left for human sign-off — not
+  self-passed.

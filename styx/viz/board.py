@@ -111,20 +111,24 @@ def card_labels(flagged: bool, receding: bool) -> dict:
 
 @dataclass(frozen=True)
 class Rollup:
-    """A ward banner's live aggregate over its beds (occupancy = live count; no capacity modelled)."""
+    """A bay banner's live aggregate over its beds (occupancy = live count; no capacity modelled)."""
 
     occupancy: int
     high: int
     med: int
     max_news2: int
+    early_signal: int = 0  # STYX-flagged (silent-but-rising) beds in the bay (P1 §A)
 
 
-def ward_status(rollup: Rollup) -> str:
-    """The banner's STEADY / BUSY / SURGE state (capacity + overdue dropped — no backing data)."""
-    if rollup.high >= 2:
-        return "SURGE"
-    if rollup.high == 1 or rollup.med >= 2:
-        return "BUSY"
+def bay_status(rollup: Rollup) -> str:
+    """The bay badge — worst of {NEWS2 state, STYX state} (P1 §A), so a NEWS2-only summary can
+    never tell the nurse to relax about a bay STYX is worried about. Worst-wins ladder:
+    ATTENTION (any NEWS2 escalation — high or med, i.e. trigger reached) → WATCH (any STYX
+    early-signal bed) → STEADY."""
+    if rollup.high >= 1 or rollup.med >= 1:
+        return "ATTENTION"
+    if rollup.early_signal >= 1:
+        return "WATCH"
     return "STEADY"
 
 
@@ -178,14 +182,16 @@ def _stat(n: int, label: str) -> str:
 
 
 def banner_html(label: str, rollup: Rollup) -> str:
-    """One ward banner: name + live rollup + the derived STEADY/BUSY/SURGE status tag."""
-    status = ward_status(rollup)
+    """One bay banner: name + live rollup (incl. the STYX early-signal count) + the worst-of
+    ATTENTION/WATCH/STEADY status tag (P1 §A — propagates STYX, never NEWS2 alone)."""
+    status = bay_status(rollup)
     return (
         f'<div class="styx-banner styx-status-{status.lower()}">'
         f'<div class="styx-banner-name">{escape(label)}</div>'
         f'<div class="styx-banner-stats">'
         f'{_stat(rollup.occupancy, "beds")}{_stat(rollup.high, "high")}'
         f'{_stat(rollup.med, "med")}{_stat(rollup.max_news2, "max NEWS2")}'
+        f'{_stat(rollup.early_signal, "early signal")}'
         f'</div><div class="styx-banner-status">{status}</div></div>'
     )
 
@@ -228,25 +234,76 @@ def vacant_tile_html() -> str:
     return '<div class="styx-card styx-vacant"><span>vacant bed</span></div>'
 
 
-def attention_rail_html(items: Sequence[tuple[int, str, str]]) -> str:
-    """The across-the-top rail of flagged beds only: (pid, band, short reason) chips."""
-    if not items:
-        return ('<div class="styx-rail styx-rail-empty">No beds flagged — '
-                'all wards within routine monitoring.</div>')
-    chips = "".join(
-        f'<span class="styx-rail-chip styx-band-{band}" style="--band:{BAND_COLOUR[band]}">'
-        f'<b>patient {pid}</b> {escape(reason)}</span>'
-        for pid, band, reason in items
+# --- (P1 §E) ward overview strip + ranked review-now worklist ---------------------------------
+# Replaces the flat 21-pill rail: orientation (counts, not pills) + a short ranked worklist, both
+# DISPLAY cuts over the existing model output → hash-safe (no re-classification, no new score).
+
+def review_rank(*, critical: bool, eta_soonest_min: float | None, risk_now: float, pid: int) -> tuple:
+    """Worklist sort key (§E): reds first, then shortest lead-time, then highest score; pid tiebreak."""
+    return (not critical, eta_soonest_min if eta_soonest_min is not None else float("inf"),
+            -risk_now, pid)
+
+
+def moving_vital(patient: Patient, idx: int) -> str:
+    """The single most-departed vital (vs baseline) as a compact worklist token — the 'one moving
+    number' (SpO₂ or RR), read-only over ``patient.vitals``."""
+    sp = vital_reading(patient, "SpO2", idx, label="SpO₂", unit="%")
+    rr = vital_reading(patient, "RR", idx, label="RR", unit="")
+    pick = sp if abs(sp.value - sp.prior) >= abs(rr.value - rr.prior) else rr
+    return f"{pick.label} {pick.value}{pick.unit} {pick.trend}"
+
+
+def _ov_chip(tone: str, n: int, cap: str) -> str:
+    return (f'<span class="styx-ov-chip"><span class="styx-ov-dot styx-ov-{tone}"></span>'
+            f'<b>{n}</b> {cap}</span>')
+
+
+def overview_strip_html(critical: int, early_signal: int, stable: int, clock: str) -> str:
+    """The ward overview strip (§E): cohort line + status counts (critical / early signal / stable).
+    Counts, not pills — the ward-level home for silent deterioration."""
+    total = critical + early_signal + stable
+    return (
+        '<div class="styx-overview">'
+        f'<div class="styx-ov-cohort">{total} patients · scored {escape(clock)}</div>'
+        '<div class="styx-ov-chips">'
+        f'{_ov_chip("crit", critical, "critical")}{_ov_chip("early", early_signal, "early signal")}'
+        f'{_ov_chip("stable", stable, "stable")}'
+        '</div></div>'
     )
-    return f'<div class="styx-rail">{chips}</div>'
+
+
+def worklist_html(rows: Sequence[tuple], more_count: int) -> str:
+    """The ranked review-now worklist (§E): rank · bed · the one moving number · lead-time, reds/
+    shortest-lead first; the tail collapses to '+k more in watch'. rows = (rank, pid, mover, lead,
+    tone) already ordered by the caller via ``review_rank``."""
+    if rows:
+        body = "".join(
+            f'<div class="styx-wl-row styx-wl-{tone}"><span class="styx-wl-rk">{rank}</span>'
+            f'<span class="styx-wl-bed">Bed {pid}</span>'
+            f'<span class="styx-wl-det">{escape(mover)}</span>'
+            f'<span class="styx-wl-lead">{escape(lead)}</span>'
+            f'<span class="styx-wl-chev">›</span></div>'
+            for rank, pid, mover, lead, tone in rows
+        )
+    else:
+        body = '<div class="styx-wl-empty">No beds to review now.</div>'
+    more = f'<div class="styx-wl-more">+ {more_count} more in watch ›</div>' if more_count > 0 else ""
+    return (
+        '<div class="styx-worklist"><div class="styx-wl-head">'
+        '<span class="styx-wl-t">Review first</span>'
+        '<span class="styx-wl-s">ranked by lead-time</span></div>'
+        f'{body}{more}</div>'
+    )
 
 
 # --- the single scoped style block the page injects once --------------------------------------
 BOARD_CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-.styx-banner,.styx-card,.styx-rail{{font-family:'IBM Plex Sans',system-ui,sans-serif;color:{_INK};}}
-.styx-pid,.styx-vital b,.styx-was,.styx-news2-foot,.styx-stat b,.styx-banner-status,.styx-rail-chip b{{
+.styx-banner,.styx-card,.styx-overview,.styx-worklist{{
+  font-family:'IBM Plex Sans',system-ui,sans-serif;color:{_INK};}}
+.styx-pid,.styx-vital b,.styx-was,.styx-news2-foot,.styx-stat b,.styx-banner-status,
+.styx-ov-chip b,.styx-wl-rk,.styx-wl-bed,.styx-wl-det{{
   font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;}}
 .styx-banner{{display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;margin:.2rem 0 .6rem;
   background:{_CARD};border:1px solid {_LINE};border-left:4px solid {_INK_3};border-radius:8px;}}
@@ -258,10 +315,10 @@ BOARD_CSS = f"""
   border-radius:999px;border:1px solid {_LINE};}}
 .styx-status-steady{{border-left-color:{BAND_COLOUR['low']};}}
 .styx-status-steady .styx-banner-status{{color:{BAND_COLOUR['low']};border-color:{BAND_COLOUR['low']};}}
-.styx-status-busy{{border-left-color:{BAND_COLOUR['med']};}}
-.styx-status-busy .styx-banner-status{{color:{BAND_COLOUR['med']};border-color:{BAND_COLOUR['med']};}}
-.styx-status-surge{{border-left-color:{BAND_COLOUR['high']};}}
-.styx-status-surge .styx-banner-status{{color:{BAND_COLOUR['high']};border-color:{BAND_COLOUR['high']};}}
+.styx-status-watch{{border-left-color:{BAND_COLOUR['med']};}}
+.styx-status-watch .styx-banner-status{{color:{BAND_COLOUR['med']};border-color:{BAND_COLOUR['med']};}}
+.styx-status-attention{{border-left-color:{BAND_COLOUR['high']};}}
+.styx-status-attention .styx-banner-status{{color:{BAND_COLOUR['high']};border-color:{BAND_COLOUR['high']};}}
 /* P0-1: never break a label mid-word — wrap only at spaces, no auto-hyphenation. */
 .styx-card{{position:relative;display:block;padding:.55rem .7rem;margin:.35rem 0;
   background:{_CARD};border:1px solid {_LINE};border-radius:8px;overflow:hidden;
@@ -290,11 +347,32 @@ BOARD_CSS = f"""
 .styx-spark{{display:block;}}
 .styx-news2-foot{{font-size:.68rem;color:{_INK_3};margin-top:.4rem;padding-top:.35rem;
   border-top:1px solid {_LINE};}}
-.styx-rail{{display:flex;gap:.4rem;flex-wrap:wrap;padding:.45rem .6rem;margin:.2rem 0 .6rem;
-  background:{_CARD};border:1px solid {_LINE};border-radius:8px;}}
-.styx-rail-empty{{color:{_INK_3};font-size:.8rem;}}
-.styx-rail-chip{{font-size:.74rem;padding:.1rem .45rem;border-radius:6px;
-  border:1px solid var(--band);color:{_INK_2};border-left:3px solid var(--band);}}
-.styx-rail-chip b{{color:{_INK};}}
+/* P1 §E — ward overview strip + ranked review-now worklist (replaces the flat rail) */
+.styx-overview{{margin:.2rem 0 .5rem;}}
+.styx-ov-cohort{{font-size:.78rem;color:{_INK_2};margin-bottom:.4rem;}}
+.styx-ov-chips{{display:flex;gap:.5rem;flex-wrap:wrap;}}
+.styx-ov-chip{{display:inline-flex;align-items:center;gap:7px;background:{_CARD};
+  border:1px solid {_LINE};border-radius:8px;padding:.3rem .6rem;font-size:.78rem;color:{_INK_2};}}
+.styx-ov-chip b{{font-size:1.05rem;color:{_INK};}}
+.styx-ov-dot{{width:8px;height:8px;border-radius:50%;flex:none;}}
+.styx-ov-crit{{background:{BAND_COLOUR['high']};}}
+.styx-ov-early{{background:{BAND_COLOUR['med']};}}
+.styx-ov-stable{{background:{BAND_COLOUR['low']};}}
+.styx-worklist{{background:{_CARD};border:1px solid {_LINE};border-radius:10px;
+  padding:.5rem .75rem;margin:.2rem 0 .7rem;}}
+.styx-wl-head{{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.3rem;}}
+.styx-wl-t{{font-size:.85rem;font-weight:600;}}
+.styx-wl-s{{font-size:.72rem;color:{_INK_3};}}
+.styx-wl-row{{display:flex;align-items:center;gap:.7rem;padding:.35rem 0;
+  border-top:1px solid {_LINE};}}
+.styx-wl-rk{{font-size:.72rem;color:{_INK_3};width:14px;}}
+.styx-wl-bed{{font-size:.82rem;font-weight:600;width:58px;}}
+.styx-wl-det{{font-size:.78rem;color:{_INK_2};flex:1;}}
+.styx-wl-lead{{font-size:.74rem;color:{BAND_COLOUR['med']};white-space:nowrap;}}
+.styx-wl-attention .styx-wl-lead{{color:{BAND_COLOUR['high']};}}
+.styx-wl-chev{{font-size:.8rem;color:{_INK_3};}}
+.styx-wl-more{{padding:.4rem 0 .1rem;border-top:1px solid {_LINE};margin-top:.1rem;
+  font-size:.78rem;color:{_INK_2};}}
+.styx-wl-empty{{font-size:.8rem;color:{_INK_3};}}
 </style>
 """
