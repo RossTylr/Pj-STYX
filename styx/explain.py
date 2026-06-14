@@ -47,6 +47,7 @@ COMPONENTS: tuple[str, ...] = (
     "trajectory", "waterline", "aegis", "cone", "ghost",
     "calliope", "sentinel", "theograph", "raw_vitals", "timeline",
     "ward_board", "watchlist", "echo", "history", "caduceus", "comparison",
+    "silent_window",
 )
 
 #: (S5.7) The single source for plain UK-clinical display labels — codenames live only in the code
@@ -117,6 +118,17 @@ CARER_ACTION: str = (
 CARER_FOOTER: str = "A synthetic replay, shown for demonstration — not real patient data."
 
 EXPLAINERS: dict[str, Explainer] = {
+    "silent_window": Explainer(
+        what="The moment the replay clock lands on: every vital still inside its normal range, yet "
+             "the trajectory is already rising toward escalation — the patient looks well on the "
+             "numbers but is drifting.",
+        how="The clock parks here automatically — the nearest re-score to the early-warning "
+            "forecast; the Silent window / Early warning / Breach buttons jump between the key "
+            "moments, and the slider scrubs freely.",
+        why="It is the window an absolute-threshold check stays silent through, and the head-start "
+            "STYX surfaces. On a synthetic replay it is the reference frame for this demo — it "
+            "claims no extra accuracy beyond the early-warning-vs-NEWS2 lead.",
+    ),
     "trajectory": Explainer(
         what="The patient's path through the clinical state space — SpO₂ (worse left) against "
              "breathing rate (worse up), with the cascade events numbered in time order.",

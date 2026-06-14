@@ -94,10 +94,17 @@ if st.session_state.get("scrub_pid") != pid:
     st.session_state["scrub_pid"] = pid
     st.session_state["scrub_pos"] = default_pos
 
-st.sidebar.markdown("**Replay clock**")
+_clk = st.sidebar.columns([8, 1])
+_clk[0].markdown("**Replay clock**")
+_sw = EXPLAINERS["silent_window"]
+with _clk[1], st.popover("ⓘ"):
+    st.markdown(f"**What** — {_sw.what}\n\n**How** — {_sw.how}\n\n**Why** — {_sw.why}")
+if explain_all:
+    st.sidebar.info(f"**What** {_sw.what}\n\n**How** {_sw.how}\n\n**Why** {_sw.why}")
 # 2×2 (not 4 across): a sidebar column split four ways is too narrow and wraps the labels.
 top, bottom = st.sidebar.columns(2), st.sidebar.columns(2)
-if top[0].button("Silent", help="silent window", width="stretch"):
+if top[0].button("Silent window", help="land on the silent window — the patient still in range "
+                 "but the trajectory already rising", width="stretch"):
     st.session_state["scrub_pos"] = default_pos
 if top[1].button(DISPLAY_NAMES["aegis"], width="stretch") and ctx.ticks["aegis"] is not None:
     st.session_state["scrub_pos"] = ctx.indices.index(ctx.ticks["aegis"])

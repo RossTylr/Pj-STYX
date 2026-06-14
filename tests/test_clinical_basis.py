@@ -62,6 +62,15 @@ def test_cascade_definitions_are_placeholders_not_invented() -> None:
     assert all(e.definition != "*[definition to confirm]*" for e in cb.GLOSSARY if not e.placeholder)
 
 
+def test_silent_window_is_defined() -> None:
+    # The demo's default frame must be defined for a viewer — a real, non-placeholder definition
+    # that ties the "silent" family together (references "silent hypoxia").
+    entry = next((e for e in cb.GLOSSARY if e.term == "Silent window"), None)
+    assert entry is not None and not entry.placeholder
+    assert entry.definition != cb.PLACEHOLDER_DEFINITION
+    assert "silent hypoxia" in entry.definition
+
+
 def test_both_attribution_mechanisms_intact() -> None:
     # The RCP acknowledgement is a copyright condition — byte-for-byte from the assets pack —
     # distinct from the Harvard reference list (academic), which carries access dates.

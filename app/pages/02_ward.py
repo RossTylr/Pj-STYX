@@ -43,11 +43,18 @@ cctx = _cctx()
 default_pos = cctx.indices.index(cctx.default_idx)
 st.session_state["scrub_pos"] = st.session_state.get("scrub_pos", default_pos)
 
-st.sidebar.markdown("**Replay clock**")
-if st.sidebar.button("Silent window", help="the cohort's silent-window frame"):
+_clk = st.sidebar.columns([8, 1])
+_clk[0].markdown("**Replay clock**")
+_sw = EXPLAINERS["silent_window"]
+with _clk[1], st.popover("ⓘ"):
+    st.markdown(f"**What** — {_sw.what}\n\n**How** — {_sw.how}\n\n**Why** — {_sw.why}")
+if st.sidebar.button("Silent window", help="land on the cohort's silent-window frame — patients "
+                     "still in range but already rising"):
     st.session_state["scrub_pos"] = default_pos
 explain_all = st.sidebar.toggle("Explain this page", value=False,
                                 help="Show a plain what / how / why under every panel.")
+if explain_all:
+    st.sidebar.info(f"**What** {_sw.what}\n\n**How** {_sw.how}\n\n**Why** {_sw.why}")
 # (6k) Setting preset — relabels the three ward boxes only; nothing is re-scored. Dict order
 # makes the first preset (NHS hospital-at-home) the default without fighting session state.
 preset = st.sidebar.selectbox("Ward labels", list(WARD_PRESET_NAMES), key="ward_preset",

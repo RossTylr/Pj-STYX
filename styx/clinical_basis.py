@@ -242,6 +242,13 @@ GLOSSARY: tuple[GlossaryEntry, ...] = (
         "deteriorating within the normal range: every vital still inside its NEWS2 band while "
         "the trajectory moves adversely.",
     ),
+    GlossaryEntry(
+        "Silent window",
+        "the period a patient is “silent but rising” — vitals all in range yet the trajectory "
+        "climbing toward escalation, as in silent hypoxia (oxygen falling while breathing effort "
+        "stays flat). The replay clock lands here by default: it is the window an absolute-"
+        "threshold check stays silent through, and the head-start STYX surfaces.",
+    ),
     GlossaryEntry("Silent flag (cascade stage 1)", PLACEHOLDER_DEFINITION, placeholder=True),
     GlossaryEntry("Early warning (cascade stage 2)", PLACEHOLDER_DEFINITION, placeholder=True),
     GlossaryEntry(
