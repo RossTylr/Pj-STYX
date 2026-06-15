@@ -1,5 +1,10 @@
 # Build prompt — STYX "Clinical basis" reference page
 
+> **Superseded (2026-06-15):** the "leave the three cascade-stage definitions as placeholders; do
+> not invent" instruction below (§8, and the checklist items at the foot of this file) no longer
+> applies — those definitions are now settled in `styx/clinical_basis.py` (see the glossary),
+> each grounded in its detector. This prompt is retained as the historical build record.
+
 ## Role and context
 You are extending **Pj-STYX**, a Streamlit + Plotly virtual-ward trajectory
 monitor (demo mode, synthetic replay — not a medical device). The app has three
