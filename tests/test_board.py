@@ -184,13 +184,15 @@ def test_bay_padding_fills_a_short_bay_in_bed_order() -> None:
     assert len(beds) == capacity and beds.count(None) == capacity - len(ordered)
 
 
-def test_lead_headline_is_a_band_and_never_negates() -> None:
-    # (§D) The cohort lead payoff: counts the early-signal set + a median lead *band* (UQ-1 — never
-    # an exact cohort minute), and never negates the alert. Empty set → no headline.
+def test_lead_headline_is_a_count_and_never_negates() -> None:
+    # (§D) The cohort early-signal payoff: counts the early-signal set, flagged ahead of NEWS2 — a
+    # count, never a cohort-level lead duration (that would conflate per-patient time-to-escalation
+    # with a ward-wide lead-over-NEWS2). Never negates the alert. Empty set → no headline.
     assert board.lead_headline([]) == ""
-    line = board.lead_headline([20.0, 45.0, 200.0, None])  # median of {20,45,200} = 45 → "30–60 min"
+    line = board.lead_headline([20.0, 45.0, 200.0, None])
     assert line.startswith("4 in an early-signal window")
-    assert "30–60 min" in line and "lead before NEWS2" in line
+    assert "flagged ahead of NEWS2" in line
+    assert "of lead" not in line and "would trigger" not in line  # no duration claimed
     for banned in ("no ", "nothing", "not "):  # the copy contract: never negate the alert
         assert banned not in line.lower()
     # flagged but no projected crossing yet → still stated as ahead of NEWS2, not silenced

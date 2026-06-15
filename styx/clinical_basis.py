@@ -144,6 +144,17 @@ OXYGEN_UPLIFT_LINE: str = (
     "(Royal College of Physicians, 2017)."
 )
 
+#: §4 call-out 3 — the measurement-source assumption (respiration rate). The model reads a
+#: wearable stream and cannot verify how each count was taken; carer-counted RR reliability is a
+#: named deployment-readiness item, out of scope for the synthetic demo.
+RR_SOURCE_LINE: str = (
+    "Measurement source — STYX reads a wearable respiration-rate stream and cannot see how each "
+    "breath count was taken. Respiration rate is the load-bearing signal for the silent-hypoxia "
+    "case, and manually or carer-counted respiration rate is known to be unreliable; validating "
+    "the measurement source is a named deployment-readiness item (RFI DP/RFI-01) and is out of "
+    "scope for this synthetic demo."
+)
+
 #: §5 — the relationship: STYX is a trajectory layer; NEWS2 is the standard it does not replace.
 RELATIONSHIP_LINE: str = (
     "STYX is a trajectory and forecast layer over the vital signs; NEWS2 is the threshold "
@@ -218,8 +229,17 @@ VIRTUAL_WARD_GUARDRAIL: str = (
     "clinical team already caring for the patient (NHS England, 2024)."
 )
 
-#: §8 — glossary. The three cascade-stage clinical definitions are not yet settled: they render
-#: as clearly-marked placeholders and MUST NOT be invented (build prompt §8; linted).
+#: §7 — regulatory scope. The demo is a synthetic-replay prototype; classification and a formal
+#: clinical safety case are named as deployment (A3) work, not claimed here.
+REGULATORY_SCOPE_LINE: str = (
+    "Regulatory scope — STYX as shown is a synthetic-replay prototype, not a medical device. "
+    "Regulatory classification and a formal clinical safety case are out of scope for this demo "
+    "and are named as deployment (A3) work, not claimed here."
+)
+
+#: §8 — glossary. The three cascade-stage definitions are now settled, each grounded in its
+#: detector (decoupling → AEGIS → threshold crossing; methodology §5); the placeholder sentinel is
+#: retained for any future term not yet clinically confirmed (linted).
 PLACEHOLDER_DEFINITION: str = "*[definition to confirm]*"
 GLOSSARY: tuple[GlossaryEntry, ...] = (
     GlossaryEntry(
@@ -249,10 +269,19 @@ GLOSSARY: tuple[GlossaryEntry, ...] = (
         "stays flat). The replay clock lands here by default: it is the window an absolute-"
         "threshold check stays silent through, and the head-start STYX surfaces.",
     ),
-    GlossaryEntry("Silent flag (cascade stage 1)", PLACEHOLDER_DEFINITION, placeholder=True),
-    GlossaryEntry("Early warning (cascade stage 2)", PLACEHOLDER_DEFINITION, placeholder=True),
     GlossaryEntry(
-        "Escalation crossing (cascade stage 3)", PLACEHOLDER_DEFINITION, placeholder=True,
+        "Silent flag (cascade stage 1)",
+        "the earliest sign — oxygenation and breathing effort begin to diverge, their normal "
+        "coupling breaking down, while both vitals are still inside their NEWS2 bands.",
+    ),
+    GlossaryEntry(
+        "Early warning (cascade stage 2)",
+        "the AEGIS early-warning flag — see “Early warning (AEGIS)” above.",
+    ),
+    GlossaryEntry(
+        "Escalation crossing (cascade stage 3)",
+        "the STYX trajectory index crossing its own absolute-risk threshold — STYX's escalation "
+        "line, not a NEWS2 trigger.",
     ),
 )
 

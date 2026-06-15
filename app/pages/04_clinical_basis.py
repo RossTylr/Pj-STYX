@@ -2,8 +2,8 @@
 
 LYR-1: a thin client. Every word comes from ``styx.clinical_basis``; the scoring table from
 ``styx.viz.scoring_table``; the footer from ``styx.readouts``. This page only arranges and
-renders — it computes nothing and invents no copy (the cascade-stage definitions are unsettled
-and render as placeholders by design).
+renders — it computes nothing and invents no copy (the cascade-stage definitions are settled in
+``styx.clinical_basis``, each grounded in its detector).
 """
 
 from pathlib import Path
@@ -23,6 +23,8 @@ from styx.clinical_basis import (
     PAGE_PURPOSE,
     RCP_ACKNOWLEDGEMENT,
     READS_PROSE,
+    REGULATORY_SCOPE_LINE,
+    RR_SOURCE_LINE,
     TABLE_NURSE_COLUMNS,
     TABLE_NURSE_ROWS,
     REFERENCES,
@@ -102,6 +104,7 @@ st.markdown(CANNOT_SEE_PROSE)
 _prose_table(TABLE_B_COLUMNS, TABLE_B_ROWS)
 st.info(SCALE2_CONSTRAINT)
 st.markdown(OXYGEN_UPLIFT_LINE)
+st.info(RR_SOURCE_LINE)
 
 # --- §5 STYX and NEWS2 (relationship and escalation) -------------------------------------------
 st.divider()
@@ -124,8 +127,9 @@ st.divider()
 st.markdown("### Place within the virtual-ward framework")
 st.markdown(VIRTUAL_WARD_PLACEMENT)
 st.info(VIRTUAL_WARD_GUARDRAIL)
+st.caption(REGULATORY_SCOPE_LINE)
 
-# --- §8 Glossary (cascade-stage definitions unsettled — placeholders by design) ------------------
+# --- §8 Glossary (cascade-stage definitions settled — grounded in their detector) ----------------
 st.divider()
 st.markdown("### Glossary")
 for entry in GLOSSARY:

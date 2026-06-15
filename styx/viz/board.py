@@ -15,8 +15,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from html import escape
 
-from styx.explain import ETA_BANDS
-from styx.readouts import NEWS2_RED, NEWS2_TRIGGER, eta_ordinal, news2_subscores_at
+from styx.readouts import NEWS2_RED, NEWS2_TRIGGER, news2_subscores_at
 from styx.synth.cohort import Patient
 
 # --- light clinical tokens (reused from the news2-explainer / clinical-basis palette) ----------
@@ -274,20 +273,15 @@ def overview_strip_html(critical: int, early_signal: int, stable: int, clock: st
 
 
 def lead_headline(flagged_etas: Sequence[float | None]) -> str:
-    """The cohort lead-window payoff (§D): how many patients sit in an early-signal window and the
-    median lead STYX buys before NEWS2 would trigger. Reuses the per-card ETA banding so the headline
-    can never claim more precision than the cards (UQ-1 — a band, never an exact cohort minute), and
-    never negates the alert. ``flagged_etas`` is the early-signal set's soonest-crossing ETAs (None
-    where no crossing is yet projected)."""
+    """The cohort early-signal count (§D): how many patients sit in an early-signal window, flagged
+    ahead of NEWS2. A count, never a cohort-level lead duration — the per-patient ETA band lives on
+    the cards (UQ-1), and no aggregate lead-time figure is claimed here (it would conflate the
+    per-patient time-to-escalation with a ward-wide lead-over-NEWS2). Never negates the alert.
+    ``flagged_etas`` is the early-signal set (None where no crossing is yet projected)."""
     n = len(flagged_etas)
     if n == 0:
         return ""
-    etas = sorted(e for e in flagged_etas if e is not None)
-    if not etas:  # flagged but no projected crossing yet — still ahead of NEWS2, stated plainly
-        return f"{n} in an early-signal window — flagged ahead of NEWS2"
-    median = etas[len(etas) // 2]
-    band = ETA_BANDS[eta_ordinal(median)]
-    return f"{n} in an early-signal window — median ~{band} of lead before NEWS2 would trigger"
+    return f"{n} in an early-signal window — flagged ahead of NEWS2"
 
 
 def worklist_html(rows: Sequence[tuple], more_count: int) -> str:

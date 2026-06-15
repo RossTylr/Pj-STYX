@@ -48,7 +48,7 @@ st.markdown(
     "SpO₂, HR and Temp against *that patient's own baseline* — flagging departure from their "
     "normal before an absolute threshold is crossed, and forecasting time to escalation. In the "
     "replay it surfaces silent-hypoxia drift up to about five hours ahead of NEWS2's red score "
-    "on the clearest case — across the ward the typical lead is one to two hours — and "
+    "on the clearest case — across the ward STYX flags 19 patients in an early-warning window — and "
     "does so *even when NEWS2 is scored on the same continuous data* — so the lead comes from "
     "reading the trajectory, not from scoring more often. Quiet by default: it surfaces only the "
     "few who are drifting and stays silent on the rest. It supports the obs, the nurse and NEWS2 "

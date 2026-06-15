@@ -2,7 +2,7 @@
 
 Five guarantees on ``styx.clinical_basis``: the required scope statements are present verbatim
 (no-alert ≠ safe, the SpO₂ Scale 2 safety constraint, the oxygen-uplift rationale, the
-virtual-ward guardrail); the cascade-stage definitions are placeholders, never invented; both
+virtual-ward guardrail); the cascade-stage definitions are settled and grounded in their detector; both
 attribution mechanisms are intact (the RCP acknowledgement byte-for-byte, the Harvard list with
 access dates); the warm ramp is the schematic's own ``palette.WARM_RAMP`` and equals the assets
 §E literals; and the copy never over-claims, with codenames confined to the glossary (LYR-1:
@@ -51,15 +51,18 @@ def test_required_scope_statements_verbatim() -> None:
     assert "(NHS England, 2024)" in guard
 
 
-def test_cascade_definitions_are_placeholders_not_invented() -> None:
-    # Build prompt §8: the three cascade-stage definitions are not clinically settled — they must
-    # render as clearly-marked placeholders, and nothing else may be one.
-    placeholders = [e for e in cb.GLOSSARY if e.placeholder]
-    assert len(placeholders) == 3
-    for e in placeholders:
-        assert "cascade stage" in e.term
-        assert e.definition == "*[definition to confirm]*"
-    assert all(e.definition != "*[definition to confirm]*" for e in cb.GLOSSARY if not e.placeholder)
+def test_cascade_definitions_are_settled_and_grounded() -> None:
+    # The three cascade-stage definitions are now settled (methodology §5: decoupling → AEGIS →
+    # threshold crossing): each is a real definition, none renders the placeholder, and stage 2
+    # cross-references the AEGIS entry rather than restating it.
+    cascade = [e for e in cb.GLOSSARY if "cascade stage" in e.term]
+    assert len(cascade) == 3
+    for e in cascade:
+        assert not e.placeholder
+        assert e.definition and e.definition != cb.PLACEHOLDER_DEFINITION
+    assert not any(e.placeholder for e in cb.GLOSSARY)  # nothing renders as unsettled now
+    stage2 = next(e for e in cb.GLOSSARY if e.term == "Early warning (cascade stage 2)")
+    assert "Early warning (AEGIS)" in stage2.definition  # cross-references the entry above
 
 
 def test_silent_window_is_defined() -> None:
@@ -129,7 +132,7 @@ def test_no_overclaim_and_codenames_confined_to_glossary() -> None:
 
 def test_page_renders_with_required_statements() -> None:
     # AppTest smoke over the rendered page: no exception, and the load-bearing statements —
-    # no-alert ≠ safe, the unsettled cascade placeholders, the NHS England citation — all visible.
+    # no-alert ≠ safe, the NHS England citation — all visible; no placeholder renders any more.
     from streamlit.testing.v1 import AppTest
 
     at = AppTest.from_file(str(_REPO / "app" / "pages" / "04_clinical_basis.py"),
@@ -141,7 +144,7 @@ def test_page_renders_with_required_statements() -> None:
         for el in getattr(at, kind)
     )
     assert cb.NO_ALERT_LINE in blob
-    assert "[definition to confirm]" in blob
+    assert "[definition to confirm]" not in blob  # cascade definitions are settled now
     assert "(NHS England, 2024)" in blob
     assert cb.RCP_ACKNOWLEDGEMENT in blob
 
