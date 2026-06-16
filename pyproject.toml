@@ -26,6 +26,7 @@ dev = [
     "jupytext",
     "nbconvert",
     "ipykernel",
+    "kaleido",  # static-PNG export so the committed .ipynb figures render on github.com
 ]
 
 [tool.setuptools]

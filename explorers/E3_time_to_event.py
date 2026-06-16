@@ -90,6 +90,12 @@ _root = next(d for d in [Path.cwd(), *Path.cwd().parents] if (d / "pyproject.tom
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
+# Emit a static PNG (kaleido) alongside the interactive figure so the committed .ipynb
+# renders on github.com (its viewer runs no JS); Jupyter still gets the live mimetype.
+import plotly.io as pio  # noqa: E402
+
+pio.renderers.default = "plotly_mimetype+png"
+
 from styx.config import SEED  # noqa: E402
 from styx.synth import Outcome, build_cohort  # noqa: E402
 from tests.test_baseline import pipeline_digest  # noqa: E402  reuse the existing digest oracle
