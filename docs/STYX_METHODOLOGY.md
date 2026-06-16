@@ -28,7 +28,7 @@ the drift is flagged.
 | **AEGIS → absolute-risk-threshold lead** | **210 sim-min** (AEGIS 705 → F4 threshold 915) | §5, gate G3 |
 | **Decoupling → first breach lead** | **200 sim-min** (onset 590 → breach 790) | §5, gate G1 |
 | **Cohort outcome AUC (history → escalation)** | **0.765**, in band [0.60, 0.90] | §6.5 |
-| **CALLIOPE top-1 faithfulness** | **0.993** (137/138), floor 0.90 | §6.4 |
+| **CALLIOPE top-1 faithfulness** | **0.968** (395/408, per-sample), floor 0.90 | §6.4 |
 | **Conformal cone coverage** | **0.914** empirical (nominal 0.90) | §6.6 |
 | **Determinism digest** | `c9380e9c…860b1d9` (build ×2 identical) | §6.7 |
 
@@ -385,8 +385,11 @@ No fallback: this is the root gate. One assertion per sub-condition:
 - **additive completeness** — `top_k` sums to the displayed risk to within 1e-9 over the silent
   window;
 - **top-1 faithfulness ≥ `G4_FAITHFULNESS_FLOOR` (0.90)** against an archetype oracle independent
-  of the attribution — **logged 137/138 = 0.993** (coupled 93/93, silent_hypoxia 44/44,
-  compensated 0/1 — its one evaluable pre-breach point, a near-tie at onset);
+  of the attribution — **0.968 (395/408)** over every pre-breach re-score window (silent_hypoxia
+  159/159, coupled 236/236, compensated 0/13). Re-baselined after the S7 cohort diversification:
+  the earlier **137/138 = 0.993** was the S4.5 cohort; on the current cohort `test_g4`'s cadence-grid
+  sweep reads 115/115 = 1.000 (compensated has no evaluable cadence window, so its misses drop out),
+  while the per-sample sweep above keeps the compensated misses visible — the more honest figure;
 - template-only headline, and a post-breach regime switch.
 
 ### 6.5 Cohort outcome AUC (`styx/synth/gates.py:127-136`)

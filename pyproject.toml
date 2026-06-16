@@ -19,6 +19,15 @@ dependencies = [
     "ruff",
 ]
 
+[project.optional-dependencies]
+# Notebook-execution tooling — so `jupytext --to ipynb --execute notebooks/*.py`
+# (restart-run-all) is reproducible for anyone, not just a hand-patched .venv.
+dev = [
+    "jupytext",
+    "nbconvert",
+    "ipykernel",
+]
+
 [tool.setuptools]
 packages = [
     "styx",

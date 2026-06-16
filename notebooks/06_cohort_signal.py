@@ -27,11 +27,9 @@
 
 # %%
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score
 
+from saturation_analysis import saturation_aucs  # §1 lifted to a shared helper (notebook 10 §11 reuses it)
 from styx.cohort import build_cohort_context, ward_frame
-from styx.config import FORECAST_WINDOW
 from styx.risk import escalation_fire_index
 from styx.synth import Outcome, build_cohort
 
@@ -54,35 +52,12 @@ print(f"cohort n={len(pats)}, escalators={int(y.sum())}, silent-window frame di=
 # should be reframed as *descriptive* (history *explains* the baseline) before it is built.
 
 # %%
-def auc(*cols) -> float:
-    X = np.column_stack(cols)
-    m = LogisticRegression(max_iter=1000).fit(X, y)
-    return float(roc_auc_score(y, m.predict_proba(X)[:, 1]))
-
-
-hist = np.array([p.comorbidity_index for p in pats])
-r_snap = np.array([cctx.risk[p.pid][di] for p in pats])
-aegis_fired = np.array(
-    [1.0 if (cctx.aegis_idx[p.pid] is not None and cctx.aegis_idx[p.pid] <= di) else 0.0 for p in pats]
-)
-
-
-def _slope(pid: int) -> float:
-    seg = cctx.risk[pid][max(0, di - FORECAST_WINDOW):di + 1]
-    x = np.arange(len(seg)) - (len(seg) - 1) / 2
-    return float(np.polyfit(x, seg, 1)[0]) if len(seg) > 1 else 0.0
-
-
-r_slope = np.array([_slope(p.pid) for p in pats])
-
-auc_hist = auc(hist)
-auc_tele = auc(r_snap, aegis_fired, r_slope)
-auc_comb = auc(hist, r_snap, aegis_fired, r_slope)
-print(f"history-only (comorbidity_index):        AUC {auc_hist:.3f}")
-print(f"  telemetry singles — risk_snap {auc(r_snap):.3f} · aegis_fired {auc(aegis_fired):.3f} · slope {auc(r_slope):.3f}")
-print(f"telemetry-only (panel of 3):             AUC {auc_tele:.3f}")
-print(f"history + telemetry (combined):          AUC {auc_comb:.3f}")
-print(f"R1 MARGINAL VALUE (combined − telemetry): {auc_comb - auc_tele:+.3f}")
+sat = saturation_aucs(cohort, cctx)  # the shared single-source computation
+print(f"history-only (comorbidity_index):        AUC {sat.history:.3f}")
+print(f"  telemetry singles — risk_snap {sat.risk_snap:.3f} · aegis_fired {sat.aegis_fired:.3f} · slope {sat.slope:.3f}")
+print(f"telemetry-only (panel of 3):             AUC {sat.telemetry:.3f}")
+print(f"history + telemetry (combined):          AUC {sat.combined:.3f}")
+print(f"R1 MARGINAL VALUE (combined − telemetry): {sat.marginal:+.3f}")
 
 # %% [markdown]
 # **Read.** The silent-window telemetry already **saturates** AUC in-sample — a construct artifact:
