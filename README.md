@@ -105,13 +105,15 @@ generated from a known process, so anything fit on it looks near-perfect in-samp
 construct artifact behind the telemetry AUC of 1.000). **They demonstrate method, not
 performance** — the real test is the identical pipeline on real data, which the roadmap
 notebooks are a dress rehearsal for, never a substitute. Sources are jupytext
-`py:percent` (the paired `.ipynb` is generated on run, not committed); each is
-deterministic and restart-run-all clean, with the canonical numbers asserted inline so
-it fails loudly on drift.
+`py:percent` (the paired `.ipynb` is generated on run and not committed — except the two
+**Built** notebooks below, whose executed renders are committed so the method is viewable
+without running); each is deterministic and restart-run-all clean, with the canonical
+numbers asserted inline so it fails loudly on drift.
 
 ### Built
 
-- **[`notebooks/10_how_styx_predicts.py`](notebooks/10_how_styx_predicts.py)** — the
+- **[`notebooks/10_how_styx_predicts.py`](notebooks/10_how_styx_predicts.py)**
+  ([rendered](notebooks/10_how_styx_predicts.ipynb)) — the
   visual mechanism walkthrough (the "watch it work" demo asset). Thirteen sections take
   the index patient, then the cohort, through every layer: raw signal → NEWS2-over-time
   → state space → decoupling → the personal-baseline early warning → forecast cone →
@@ -119,7 +121,8 @@ it fails loudly on drift.
   these numbers aren't" saturation cell → limits.
   Three-register explainer (plain for a clinician, dev for an engineer, tech for a data
   scientist) on every section.
-- **[`explorers/E3_time_to_event.py`](explorers/E3_time_to_event.py)** — "when, not
+- **[`explorers/E3_time_to_event.py`](explorers/E3_time_to_event.py)**
+  ([rendered](explorers/E3_time_to_event.ipynb)) — "when, not
   whether": reframes the readout from a binary risk flag to a **calibrated
   time-to-escalation** (survival analysis), targeting the clinical NEWS2-red trigger
   (independent of STYX's own line). It finds the reframe is *sound* — predicting **when**
