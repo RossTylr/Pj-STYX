@@ -484,10 +484,10 @@ print(f"✓ embedding mode = '{emb.mode}' → §3 by-construction caveat holds")
 # samples** (60 sim-min), extended over the horizon. The band half-widths are the
 # **(1 − α) = 90th-percentile of absolute residuals, pooled across the cohort** (a single
 # marginal `conformal_band`, computed once). Crucial honesty point: the empirical coverage
-# **0.914 is *pooled / marginal*** — it holds on average over the calibration cohort, and
-# is **not** a per-patient guarantee; an individual cone can under- or over-cover. The band
-# is also marginal (not conditional on the current state), so it widens uniformly with the
-# horizon rather than adapting to local volatility.
+# (**0.915**, computed live below) is **pooled / marginal** — it holds on average over the
+# calibration cohort, and is **not** a per-patient guarantee; an individual cone can under- or
+# over-cover. The band is also marginal (not conditional on the current state), so it widens
+# uniformly with the horizon rather than adapting to local volatility.
 
 # %%
 from styx.forecast import project  # noqa: E402
@@ -515,10 +515,17 @@ print(f"§6 forecast fires at {fire.forecast_min:.0f} sim-min "
 fig6
 
 # %% [markdown]
-# ### §6 self-check
+# ### §6 self-check — forecast fire + live conformal coverage
 # %%
+from analysis import conformal_coverage  # noqa: E402  shared single source (same sweep as nb 05 B)
+from styx.cohort import build_cohort_context  # noqa: E402
+
+cctx = build_cohort_context(cohort)  # cohort-wide context — built once here, reused by §10 + §11
+_cov = conformal_coverage(cctx)      # empirical cone coverage, swept over all patients/anchors
 assert fire.forecast_min == 750.0, f"forecast fire moved off 750: {fire.forecast_min}"
-print("✓ forecast fire at 750 sim-min (conformal coverage 0.914 — pooled/marginal, not per-patient)")
+assert round(_cov.mean, 3) == 0.915, f"conformal coverage moved off 0.915: {_cov.mean}"
+print(f"✓ forecast fire at 750 sim-min · conformal coverage {_cov.mean:.3f} "
+      f"(nominal {_cov.nominal:.2f}) — pooled/marginal, computed live, not per-patient")
 
 # %% [markdown]
 # ## §7 — Risk index (cascade stage 3)
@@ -667,10 +674,16 @@ print("✓ two-breach distinction holds: 790 (range excursion) ≠ 915 (F4 risk 
 #
 # ### Plain
 # A flag a clinician can't interrogate is a flag they can't trust. CALLIOPE turns the
-# risk score into **plain reasons**: it names, in words, the handful of factors actually
-# driving the number — here, falling oxygenation approaching the silent-hypoxia mode, with
-# the early-warning context (how far the patient has drifted from their own baseline, and
-# that breathing and oxygen have decoupled). One sentence, every word backed by the model.
+# risk score into **plain reasons**: it names, in words, the factors actually driving the
+# number — here, falling oxygenation approaching the silent-hypoxia mode, with the
+# early-warning context (how far the patient has drifted from their own baseline, and that
+# breathing and oxygen have decoupled). One sentence, every word backed by the model.
+#
+# **And where it is wrong, we say so.** Checked against the textbook driver for each
+# deterioration pattern, the named reason is right for **silent-hypoxia and coupled patients
+# in every window**, but **wrong for the compensated pattern in every window** (0 of 13): there
+# it names *oxygenation* when the textbook driver is *effort*. We surface that split rather
+# than average it into a single reassuring score.
 #
 # ### Dev
 # Reuses CALLIOPE unchanged: `styx.rationale.explain(patient, emb, basins, idx)` returns a
@@ -685,14 +698,27 @@ print("✓ two-breach distinction holds: 790 (range excursion) ≠ 915 (F4 risk 
 # The headline is a **strict template** over the model's real **top-3 additive risk terms**
 # (`0.5·oxygenation-proximity`, `0.5·effort-proximity`, `0.5·worst-vital-exceedance`),
 # regime-aware (post-breach the proximity clips, `additive` flips False and the contributor
-# panel is suppressed). Faithfulness = the fraction of pre-breach, risk ≥ 0.1 windows (all
-# non-stable patients) where the **named top-1 term matches the archetype's true driver** —
-# **395 / 408 = 0.968** here (silent-hypoxia 159/159, coupled 236/236, **compensated 0/13**).
-# The compensated misses are a **real, surfaced limitation**, not a near-tie: that archetype's
-# early window is effort-led, yet top-1 there does not name effort proximity. (Re-baselined: the
-# previously-logged **137/138 = 0.993** predates the S7 cohort diversification — the cadence-grid
-# sweep `test_g4` runs now reads 115/115 = 1.000 because compensated has no evaluable cadence
-# window; the per-sample sweep above keeps that miss visible, the more honest figure to report.)
+# panel is suppressed). **What this metric measures.** CALLIOPE names the *model's* own top
+# term — so it is faithful to the model **by construction** (exactly-additive split, no tie).
+# The G4 "faithfulness" sweep tests something stricter: does that model-chosen top-1 match the
+# **generating archetype's** true driver (`_SIGNATURE`)? It is a check on the *model's risk
+# decomposition*, surfaced through CALLIOPE — not on CALLIOPE's narration of the model.
+#
+# **Result: 395 / 408 = 0.968** — silent-hypoxia 159/159, coupled 236/236, **compensated 0/13**.
+# The 0/13 is systematic, not a tie: on compensated patients the decomposition is
+# *oxygenation-led* (oxygenation-proximity ≈ 0.10) while effort-proximity sits at ≈ −0.001, so
+# top-1 is never effort. Why: compensated breaches fast, so its *only* evaluable pre-breach
+# windows are the earliest ones where risk has just cleared 0.1 — there the constructed effort
+# axis has not yet separated, and the baseline oxygenation term dominates. So the gap is a
+# **model construct-validity limit on one fast-breaching archetype**, flagged (not closed) here.
+#
+# **Basis — stated plainly.** This is a **per-sample** sweep (every index), a *deliberately finer
+# basis than gate G4 uses*: `test_g4` sweeps the **cadence grid** and on the current cohort reads
+# **115/115 = 1.000** — because compensated has *no* cadence-grid window at all, the gate's basis
+# *hides* the one archetype that fails. The per-sample basis is reported here precisely because it
+# does not. (Re-baseline: the previously-logged **137/138 = 0.993** is the pre-S7 cohort; the S7
+# stream diversification moved both the window counts and the basis. `STYX_METHODOLOGY.md §6.4`
+# is updated to match this figure and basis.)
 
 # %%
 from styx.explain import DISPLAY_NAMES  # noqa: E402
@@ -703,19 +729,23 @@ from styx.synth.gates import breach_index  # noqa: E402
 from tests.test_g4 import _SIGNATURE  # noqa: E402  ground-truth driver per archetype — single source
 
 # top-1 faithfulness over EVERY pre-breach re-score window (per-sample), using gate G4's archetype
-# oracle. Finer than test_g4's cadence grid — it keeps the compensated misses the grid skips.
-_agree = _total = 0
+# oracle — tracked PER ARCHETYPE, because the mean hides the story (the split is the headline).
+_by_arch: dict[str, list[int]] = {}  # archetype.value -> [agree, total]
 for _q in cohort.patients:
     if _q.archetype is Archetype.STABLE:
         continue
     _brk = breach_index(_q) or _q.t_min.size
     _risk = risk_series(_q, ctx.emb, ctx.basins)
+    _slot = _by_arch.setdefault(_q.archetype.value, [0, 0])
     for _idx in range(_q.t_min.size):
         if _idx >= _brk or _risk[_idx] < 0.1:  # pre-breach, attribution meaningful
             continue
-        _total += 1
-        _agree += explain(_q, ctx.emb, ctx.basins, _idx).top_k[0][0] in _SIGNATURE[_q.archetype]
+        _slot[1] += 1
+        _slot[0] += int(explain(_q, ctx.emb, ctx.basins, _idx).top_k[0][0] in _SIGNATURE[_q.archetype])
+_agree = sum(a for a, _ in _by_arch.values())
+_total = sum(t for _, t in _by_arch.values())
 faithfulness = _agree / _total
+_split = " · ".join(f"{k} {a}/{t}" for k, (a, t) in sorted(_by_arch.items()))
 
 # the index patient's rationale at the silent-window frame (the app's headline + contributors)
 r = explain(p, ctx.emb, ctx.basins, ctx.default_idx)
@@ -732,25 +762,32 @@ fig9 = go.Figure(go.Waterfall(
 fig9.add_annotation(xref="paper", yref="paper", x=0.0, y=1.13, showarrow=False, xanchor="left",
                     align="left", font=dict(size=12, color=pal.ANNOTATION),
                     text=f"<b>{r.headline}</b>")
-if r.context:
-    fig9.add_annotation(xref="paper", yref="paper", x=0.0, y=-0.22, showarrow=False, xanchor="left",
-                        align="left", font=dict(size=10, color="#444444"),
-                        text="early-warning context — " + " · ".join(r.context))
+_ctx_line = ("early-warning context — " + " · ".join(r.context)) if r.context else ""
+fig9.add_annotation(xref="paper", yref="paper", x=0.0, y=-0.22, showarrow=False, xanchor="left",
+                    align="left", font=dict(size=10, color="#444444"),
+                    text=f"{_ctx_line}<br>top-1 faithfulness vs archetype oracle "
+                         f"{_agree}/{_total} = {faithfulness:.3f}  ({_split}) — wrong on every "
+                         f"compensated window, surfaced not averaged")
 fig9.update_layout(title=f"§9 — {DISPLAY_NAMES['calliope']}: additive attribution (index patient)",
-                   yaxis_title="risk contribution", height=440, showlegend=False,
-                   margin=dict(t=90, b=110))
+                   yaxis_title="risk contribution", height=460, showlegend=False,
+                   margin=dict(t=90, b=140))
 fig9.write_html(str(_root / "outputs" / "10_s9_calliope.html"))
 print(f"§9 CALLIOPE headline: {r.headline}")
-print(f"§9 top-1 faithfulness = {_agree}/{_total} = {faithfulness:.3f}")
+print(f"§9 top-1 faithfulness = {_agree}/{_total} = {faithfulness:.3f}  ({_split})")
 fig9
 
 # %% [markdown]
 # ### §9 self-check
 # %%
+# assert the PER-ARCHETYPE split — the mean alone would hide the compensated failure
+assert _by_arch["silent_hypoxia"] == [159, 159], f"silent_hypoxia split moved: {_by_arch}"
+assert _by_arch["coupled"] == [236, 236], f"coupled split moved: {_by_arch}"
+assert _by_arch["compensated"] == [0, 13], f"compensated split moved: {_by_arch}"
 assert (_agree, _total) == (395, 408), f"faithfulness sweep moved off 395/408: {_agree}/{_total}"
 assert round(faithfulness, 3) == 0.968, f"faithfulness moved off 0.968: {faithfulness}"
-print("✓ CALLIOPE top-1 faithfulness 395/408 = 0.968 (silent 159/159 · coupled 236/236 · "
-      "compensated 0/13 — the compensated pre-breach window is a real, surfaced miss)")
+print("✓ CALLIOPE top-1 faithfulness 395/408 = 0.968 — silent_hypoxia 159/159 · coupled 236/236 · "
+      "compensated 0/13 (faithful on two archetypes, wrong on every compensated window — a model "
+      "construct-validity gap, surfaced not averaged)")
 
 # %% [markdown]
 # ## §10 — Cohort view (operational)
@@ -775,9 +812,9 @@ print("✓ CALLIOPE top-1 faithfulness 395/408 = 0.968 (silent 159/159 · couple
 # detector recovers it. It is stated here, where it appears, not buried in a footnote.
 
 # %%
-from styx.cohort import build_cohort_context, ward_frame  # noqa: E402
+from styx.cohort import ward_frame  # noqa: E402
 
-cctx = build_cohort_context(cohort)               # the ward's cohort fit (single source w/ 02_ward.py)
+# cctx (the ward's cohort fit, single source w/ 02_ward.py) was built once in §6 — reuse it
 _di = cctx.default_idx
 _rows = ward_frame(cctx, _di)
 watch = [row for row in _rows if row.silent_but_rising]
@@ -854,7 +891,7 @@ print("✓ early-signal watchlist = 19 (matches the ward board's silent_but_risi
 # question, the planned subject of notebooks 11–12.
 
 # %%
-from saturation_analysis import saturation_aucs  # noqa: E402  shared single source w/ notebook 06
+from analysis import saturation_aucs  # noqa: E402  shared single source w/ notebook 06
 
 sat = saturation_aucs(cohort, cctx)  # reuse the ward cohort context built in §10
 fig11 = go.Figure()

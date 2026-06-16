@@ -28,7 +28,7 @@
 # %%
 import numpy as np
 
-from saturation_analysis import saturation_aucs  # §1 lifted to a shared helper (notebook 10 §11 reuses it)
+from analysis import saturation_aucs  # §1 lifted to a shared helper (notebook 10 §11 reuses it)
 from styx.cohort import build_cohort_context, ward_frame
 from styx.risk import escalation_fire_index
 from styx.synth import Outcome, build_cohort

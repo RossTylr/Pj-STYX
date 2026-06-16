@@ -1,11 +1,11 @@
-"""Shared saturation analysis for notebooks 06 and 10 — the single source (no duplication).
+"""Shared in-sample analysis helpers for the proof notebooks — the single source (no duplication).
 
 Construct-validity measurement, **not** ward performance: one synthetic cohort scored in-sample.
-It asks whether an in-sample logistic regression recovers the scripted ESCALATED outcome from
-history alone, telemetry alone, or both — so the *marginal* value of the telemetry/trajectory panel
-over history can be read off. Lifted verbatim from notebook 06 §1 so both notebooks compute it once
-and can never drift apart. Pure analysis (LYR-1 spirit): reads a cohort + its prebuilt context, runs
-no model maths of STYX's own, touches nothing in ``styx/``.
+Two analyses live here so the notebooks that report them compute them once and cannot drift apart:
+``saturation_aucs`` (history vs telemetry vs combined AUC — notebook 06 §1, notebook 10 §11) and
+``conformal_coverage`` (empirical vs nominal cone coverage — notebook 10 §6; the same computation
+notebook 05 Panel B performs inline). Pure analysis (LYR-1 spirit): reads a cohort + its prebuilt
+context, runs no model maths of STYX's own, touches nothing in ``styx/``.
 """
 
 from __future__ import annotations
@@ -16,7 +16,8 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 
-from styx.config import FORECAST_WINDOW
+from styx.config import CONFORMAL_ALPHA, FORECAST_WINDOW
+from styx.forecast import project
 from styx.synth import Outcome
 
 
@@ -70,3 +71,34 @@ def saturation_aucs(cohort, cctx) -> Saturation:
         aegis_fired=auc(aegis_fired),
         slope=auc(r_slope),
     )
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """Empirical conformal-cone coverage — pooled (marginal), not a per-patient guarantee."""
+
+    per_horizon: np.ndarray  # (H,) empirical coverage at each horizon step
+    mean: float  # mean over the horizon
+    nominal: float  # the band's nominal target, 1 − α
+
+
+def conformal_coverage(cctx) -> Coverage:
+    """Empirical vs nominal cone coverage, swept over all patients and re-score anchors (nb 05 B).
+
+    At every anchor and horizon step, is the realised risk inside the projected band? Coverage is
+    **marginal** — pooled across the calibration cohort — exactly the claim the band makes, no more.
+    """
+    t = cctx.t_min
+    horizon, n = cctx.band.size, t.size
+    hits, total = np.zeros(horizon), np.zeros(horizon)
+    for risk in cctx.risk.values():
+        for now_idx in range(FORECAST_WINDOW - 1, n - 1):
+            cone = project(risk, t, now_idx, cctx.band)
+            for k in range(horizon):
+                j = now_idx + 1 + k
+                if j >= n:
+                    break
+                hits[k] += float(cone.lower[k] <= risk[j] <= cone.upper[k])
+                total[k] += 1.0
+    per_horizon = hits / np.maximum(total, 1.0)
+    return Coverage(per_horizon, float(per_horizon.mean()), 1.0 - CONFORMAL_ALPHA)

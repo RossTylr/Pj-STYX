@@ -29,7 +29,7 @@ the drift is flagged.
 | **Decoupling → first breach lead** | **200 sim-min** (onset 590 → breach 790) | §5, gate G1 |
 | **Cohort outcome AUC (history → escalation)** | **0.765**, in band [0.60, 0.90] | §6.5 |
 | **CALLIOPE top-1 faithfulness** | **0.968** (395/408, per-sample), floor 0.90 | §6.4 |
-| **Conformal cone coverage** | **0.914** empirical (nominal 0.90) | §6.6 |
+| **Conformal cone coverage** | **0.915** empirical (nominal 0.90) | §6.6 |
 | **Determinism digest** | `c9380e9c…860b1d9` (build ×2 identical) | §6.7 |
 
 **The caveat, stated up front (§6.6):** at the silent-window demo frame the telemetry panel
@@ -385,11 +385,17 @@ No fallback: this is the root gate. One assertion per sub-condition:
 - **additive completeness** — `top_k` sums to the displayed risk to within 1e-9 over the silent
   window;
 - **top-1 faithfulness ≥ `G4_FAITHFULNESS_FLOOR` (0.90)** against an archetype oracle independent
-  of the attribution — **0.968 (395/408)** over every pre-breach re-score window (silent_hypoxia
-  159/159, coupled 236/236, compensated 0/13). Re-baselined after the S7 cohort diversification:
-  the earlier **137/138 = 0.993** was the S4.5 cohort; on the current cohort `test_g4`'s cadence-grid
-  sweep reads 115/115 = 1.000 (compensated has no evaluable cadence window, so its misses drop out),
-  while the per-sample sweep above keeps the compensated misses visible — the more honest figure;
+  of the attribution. CALLIOPE names the *model's* own top term by construction; this metric tests
+  whether that model-chosen driver matches the **generating archetype** — i.e. it checks the model's
+  risk *decomposition*, surfaced through CALLIOPE, not the narration. **Per-sample basis: 0.968
+  (395/408)** — silent_hypoxia 159/159, coupled 236/236, **compensated 0/13**. The 0/13 is
+  systematic, not a tie: compensated breaches fast, so its only evaluable pre-breach windows are the
+  earliest (risk just past 0.1), where the constructed effort axis has not separated and the
+  oxygenation-proximity term dominates — a model construct-validity limit on one archetype, flagged
+  not closed. **Basis + re-baseline:** the earlier **137/138 = 0.993** was the S4.5 cohort; the S7
+  diversification moved the window counts, and on the current cohort `test_g4`'s **cadence-grid** sweep
+  reads **115/115 = 1.000** — because compensated has *no* cadence window, the gate's basis hides the
+  one failing archetype, so the **per-sample** figure is reported as the honest one;
 - template-only headline, and a post-breach regime switch.
 
 ### 6.5 Cohort outcome AUC (`styx/synth/gates.py:127-136`)
@@ -465,8 +471,9 @@ print('AEGIS->threshold', ft.aegis_threshold_lead_min, '| AEGIS->NEWS2', news2_c
 .venv/bin/python notebooks/06_cohort_signal.py
 ```
 
-Values are seed=42, A2 re-score cadence 15 sim-min. Coverage (0.914) is logged in
-`notebooks/05_methods_story` (`EXPERIMENT_LOG.md` S5).
+Values are seed=42, A2 re-score cadence 15 sim-min. Coverage (0.915, `:.3f` of 0.91489) is computed
+live in `notebooks/05_methods_story` and `notebooks/10_how_styx_predicts` §6 (the earlier 0.914 was
+a truncation of the same figure).
 
 ---
 
@@ -481,7 +488,7 @@ Values are seed=42, A2 re-score cadence 15 sim-min. Coverage (0.914) is logged i
   NEWS2 Scale 1. STYX's Scale-1 shading is clinically wrong for a Scale-2 (e.g. COPD) patient.
 - **No oxygen-uplift flag.** The binary +2 O₂-supplementation score is not modelled — the basis of
   the silent-hypoxia gap, but also a NEWS2 parameter the comparator here does not carry.
-- **Marginal conformal coverage.** The cone's 0.914 coverage is pooled across the calibration
+- **Marginal conformal coverage.** The cone's 0.915 coverage is pooled across the calibration
   cohort, not a per-patient guarantee.
 - **One scenario, one seed.** The 210 / 305 sim-min leads are properties of the scripted silent
   case at seed=42, not a general performance claim.
