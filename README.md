@@ -6,9 +6,10 @@ replacement.** STYX renders each patient's telemetry as a path through a learned
 state space and re-scores it every 15 simulated minutes against *that patient's own
 baseline* across RR, SpO₂, HR and Temp — surfacing the patient who still looks well
 on today's numbers but is drifting toward deterioration, and flagging them *before*
-an absolute threshold is crossed. It also integrates the patient's care history
-(Theograph). Logic lives in the importable `styx/` package; `app/` (Streamlit +
-Plotly) and `notebooks/` are thin clients of it.
+an absolute threshold is crossed. It also folds in the patient's lifelong care
+history — GP, A&E, admissions and the rest as a single timeline. Logic lives in the
+importable `styx/` package; `app/` (Streamlit + Plotly) and `notebooks/` are thin
+clients of it.
 
 In the synthetic replay, STYX surfaces silent-hypoxia drift up to about five hours
 ahead of NEWS2's red score on the clearest case, and flags 19 patients across the
@@ -36,7 +37,7 @@ data — see the in-app **Clinical basis** page for scope and limits.)
 | Patient view | Ward board |
 |---|---|
 | ![Patient view](docs/Patient.jpeg) | ![Ward board](docs/Ward.jpeg) |
-| STYX × Theograph hero: trajectory, forecast cone, risk waterline, event overlay. | Cohort triage ranked by time-to-escalation, with risk heat-strips. |
+| Patient hero — trajectory, forecast cone, risk waterline, and the care-event overlay. | Cohort triage ranked by time-to-escalation, with risk heat-strips. |
 
 ## Views
 
@@ -47,11 +48,11 @@ The app (sidebar nav, in workflow order) is five thin clients of `styx/`:
 - **Ward board** — cohort triage on the shared replay clock: an overview strip, a
   ranked review-now worklist, and physical bed bays. NEWS2 band is each bed's primary
   signal; the STYX trend rides the sparkline.
-- **Patient detail** — the STYX × Theograph hero: state-space trajectory, risk
-  waterline, forecast cone, the NEWS2 A/B comparator, history-as-prior survival, and
-  the CALLIOPE rationale (model top-k attribution).
-- **Bedside display** — a patient- and carer-safe surface (HERMES): a calm status and
-  a plain reason, with no scores, codenames, or "breach/escalation" language.
+- **Patient detail** — the trajectory-and-care-history hero: state-space trajectory,
+  risk waterline, forecast cone, the NEWS2 A/B comparator, history-as-prior survival,
+  and a plain-language rationale naming the signals most driving the score.
+- **Bedside display** — a patient- and carer-safe surface: a calm status and a plain
+  reason, with no scores, codenames, or "breach/escalation" language.
 - **Clinical basis** — what STYX is grounded in: NEWS2 Scale 1 scoring, what it reads,
   what it cannot see (no BP, no consciousness level), scope, limits, glossary, and
   references.
@@ -95,44 +96,64 @@ Drop the hosted app into any page with an iframe and the `?embed=true` flag:
 - Keep the **synthetic-data, not-a-live-deployment** disclaimer visible on the host
   page too — the demo must never imply real patient data.
 
-## Data-science notebooks (in progress)
+## Data-science notebooks
 
-> _Holding section — these three demo notebooks are being built today; links land
-> when they merge._
+All notebooks are consumers of the **seed-42 synthetic cohort** — they never touch the
+synth engine or re-baseline the determinism digest; any model/split RNG is
+notebook-local and separately seeded. They share one honesty spine: synthetic data is
+generated from a known process, so anything fit on it looks near-perfect in-sample (the
+construct artifact behind the telemetry AUC of 1.000). **They demonstrate method, not
+performance** — the real test is the identical pipeline on real data, which the roadmap
+notebooks are a dress rehearsal for, never a substitute. Sources are jupytext
+`py:percent` (the paired `.ipynb` is generated on run, not committed); each is
+deterministic and restart-run-all clean, with the canonical numbers asserted inline so
+it fails loudly on drift.
 
-Three notebooks, all consumers of the existing **seed-42 synthetic cohort** (they
-never touch the synth engine or re-baseline the digest; any model/split/bias RNG is
-notebook-local and separately seeded). They share one honesty spine: synthetic data
-is generated from a known process, so anything fit on it looks near-perfect (the same
-construct artifact as the telemetry AUC of 1.000). **All three demonstrate method,
-not performance** — the real test is the identical pipeline on real data, which two
-of them are a dress rehearsal for, never a substitute. Build order is NB1 → NB2 → NB3
-(NB3 needs NB2's model).
+### Built
 
-- **`10_how_styx_predicts.ipynb`** — the hyper-detailed visual walkthrough (the
-  "watch it work" demo asset). Thirteen sections take the index patient, then the
-  cohort, through every layer: raw signal → NEWS2-over-time → state space →
-  decoupling → AEGIS → forecast cone → risk index → the assembled cascade → CALLIOPE
-  → cohort → a "what these numbers aren't" saturation cell → limits. Every step
-  carries the three-register explainer (plain for a clinician, dev for an engineer,
-  tech for a data scientist).
-- **`11_learning_pipeline_poc.ipynb`** — the supervised train / validate / test
-  rehearsal. Up front: STYX today is *mechanistic, not a learned model*; this shows
-  how it *would* learn from real data, run on synth as a template. Ingest → a schema
-  mirroring a real wearable / MIMIC-style source → patient-level split → feature
-  engineering (with a leakage / anti-tautology audit) → glass-box model → validation
-  (AUROC + CI, sens/spec, PPV/NPV, calibration) → a held-out test run once → the
-  honesty checkpoint.
-- **`12_validation_assurance_poc.ipynb`** — the assurance harness for the roadmap
+- **[`notebooks/10_how_styx_predicts.py`](notebooks/10_how_styx_predicts.py)** — the
+  visual mechanism walkthrough (the "watch it work" demo asset). Thirteen sections take
+  the index patient, then the cohort, through every layer: raw signal → NEWS2-over-time
+  → state space → decoupling → the personal-baseline early warning → forecast cone →
+  risk index → the assembled cascade → the plain-language rationale → cohort → a "what
+  these numbers aren't" saturation cell → limits.
+  Three-register explainer (plain for a clinician, dev for an engineer, tech for a data
+  scientist) on every section.
+- **[`explorers/E3_time_to_event.py`](explorers/E3_time_to_event.py)** — "when, not
+  whether": reframes the readout from a binary risk flag to a **calibrated
+  time-to-escalation** (survival analysis), targeting the clinical NEWS2-red trigger
+  (independent of STYX's own line). It finds the reframe is *sound* — predicting **when**
+  (Cox C-index ≈ 0.915) is a real, non-saturating target where predicting **whether**
+  saturates (AUC 1.000) — but the per-patient estimate is **not yet deployable**:
+  calibration is poor per subgroup in-sample, and the compensated pattern *under-warns*
+  (predicts later than it happens). Verdict: **conditional adopt**, blocked on
+  per-subgroup calibration and real-data validation. The §5 card is an honest
+  illustration, not a shippable readout.
+
+### Roadmap
+
+- **`11_learning_pipeline.ipynb`** — the supervised train / validate / test rehearsal:
+  how STYX (today *mechanistic, not learned*) *would* learn from real data, done properly
+  — schema mirroring a real wearable / MIMIC-style source → patient-level split →
+  leakage-audited features → glass-box model → AUROC/CI, sens/spec, PPV/NPV, calibration
+  → a held-out test run once → the honesty checkpoint.
+- **`12_validation_assurance.ipynb`** — the assurance harness for the roadmap
   non-negotiables: subgroup / fairness with an explicit pulse-oximetry skin-tone bias
   injection (the cell that matters most — that bias bites exactly where the
-  silent-hypoxia thesis lives), calibration + threshold-by-clinical-cost,
-  alert-burden / false-positive curves, drift across reseeded cohorts, and a DCB0129
-  evidence-mapping table.
+  silent-hypoxia thesis lives), calibration + threshold-by-clinical-cost, alert-burden /
+  false-positive curves, drift across reseeded cohorts, and a DCB0129 evidence map.
+  (Needs NB2's model + split.)
+- **Explorers** ([`docs/STYX_explorer_notebooks.md`](docs/STYX_explorer_notebooks.md)) —
+  focused "what if" studies, each stating up front what synthetic data can and cannot
+  settle. E3 (above) is built; **E1** (do the constructed state-space axes earn their
+  keep?), **E2** (what richer wearable signals would add), and **E4** (a fairer,
+  nurse-skill comparator) remain, ordered by how much synth can honestly answer.
 
-NB1 is the demo; NB2 and NB3 are the answer to "this is unvalidated — why trust the
-approach?" — they show the team knows exactly how real validation is done and has
-already built the rehearsal harness, with caveats stated honestly throughout.
+The walkthrough (NB1) is the demo; the learning + assurance notebooks (NB2/NB3) are the
+answer to "this is unvalidated — why trust the approach?" — they show real validation is
+understood and the rehearsal harness already built, with caveats stated honestly
+throughout. The explorers probe specific design questions; E3's conditional-adopt verdict
+is the template for how they report — a clear finding, honestly bounded.
 
 ## Where to look
 
